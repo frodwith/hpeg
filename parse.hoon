@@ -5,16 +5,10 @@
 :-  %say
 |=  *
 :-  %noun
-=<  =/  hel  (hpeg @ta (list @ta) ,~ ,~ ,~)
-    =/  ascii-tapes=toke.hel
-      :-  |=(@ta `@`+<)
-      =|  took=(list @ta)
-      |=  [n=@ tap=(list @ta)]
-      ?~  tap  ~
-      ?:  =(n 1)
-        :_  t.tap
-        (rep 3 (flop [i.tap took]))
-      $(n (dec n), took [i.tap took], tap t.tap)
+=<  =/  hel  (hpeg @tD tape ,~ ,~ ,~)
+    =/  tapes=toke.hel
+      :-  |=(@tD `@`+<)
+      |=(tape +<)
     =/  no-memo=hall.hel  
       =/  nil  |=(* ~)
       [nil nil]
@@ -24,7 +18,7 @@
     =/  compiled=exe.hel  (bake.hel gel ~)
     ?>  .=  [t+%h t+%e t+%l t+%l t+%o t+',']
         %-  hel  
-        :*  ascii-tapes
+        :*  tapes
             no-memo
             compiled
             "hello, anything!"
@@ -38,17 +32,18 @@
 ::  reduces (puffs) tokens to atoms for t, run, and set.
 +$  gram  (pair @tas (map @tas plan))
 +$  plan
-  $~  [%any 0]                    ::  empty
+  $~  [%any &]                    ::  empty
   $^  [p=plan q=plan]             ::  sequence
-  $%  [%any n=@]                  ::  n tokens
+  $%  [%any e=?]                  ::  0 or 1 tokens
       [%t puf=@]                  ::  reduced token
       [%r name=@tas]              ::  rule reference
       [%or p=plan q=plan]         ::  ordered choice
       [%not p=plan]               ::  negative lookahead
       [%and p=plan]               ::  positive lookahead
-      [%rep p=plan]               ::  * zero or more
-      [%mor p=plan]               ::  + one or more
-      [%opt p=plan]               ::  ? optional
+      [%tar p=plan]               ::  * zero or more
+      [%lus p=plan]               ::  + one or more
+      [%rep n=@ p=plan]           ::  p exactly n times
+      [%wut p=plan]               ::  ? optional
       [%run from=@ to=@]          ::  range [a-z]
       [%set set=(set @)]          ::  class [abd]
       [%tag name=@tas p=plan]     ::  labelled
@@ -113,7 +108,7 @@
   ::  it is recommended that the types be numbered (%0, %1, etc.)
   ::  so that the ranges make sense.
   +$  puff  $-(tom @)
-  +$  pass  $-([n=@ =tos] $@(~ [tok=tom sat=tos]))
+  +$  pass  $-(tos $@(~ [tok=tom sat=tos]))
   +$  toke  [puf=puff pas=pass]
   ::
   ::  the %u case enables (tagged) typed semantic actions.
@@ -143,9 +138,9 @@
   ::  semantic actions have been embedded into the tree,
   ::  and operators have been numbered for maximal directness.
   +$  code
-    $~  [%0 0]
+    $~  [%0 &]
     $^  [p=code q=code]
-    $%  [%0 n=@]                             ::  any
+    $%  [%0 e=?]                             ::  any
         [%1 puf=@]                           ::  t
         [%2 =axis act=$@(~ act)]             ::  r
         [%3 p=code q=code]                   ::  or
@@ -169,7 +164,7 @@
     |-  ^-  code
     ?-  -.bat
       ^     [$(bat p.bat) $(bat q.bat)]
-      %any  0+n.bat
+      %any  0+e.bat
       %t    1+puf.bat
       %r    :+  %2  (~(got by inx) name.bat)
             =/  got  (~(get by mean) name.bat)
@@ -177,10 +172,16 @@
       %or   3+[$(bat p.bat) $(bat q.bat)]
       %not  4+$(bat p.bat)
       %and  4+4+$(bat p.bat)
-      %rep  5+$(bat p.bat)
-      %mor  =/  c  $(bat p.bat)
+      %tar  5+$(bat p.bat)
+      %wut  6+$(bat p.bat)
+      %lus  =/  c  $(bat p.bat)
             [c %5 c]
-      %opt  6+$(bat p.bat)
+      %rep  ?:  =(0 n.bat)  0+&
+            =/  one=code  $(bat p.bat)
+            =/  out=code  one
+            |-  ^+  out
+            ?:  =(0 n.bat)  out
+            $(n.bat (dec n.bat), out [one out])
       %run  7+[from.bat to.bat]
       %set  8+set.bat
       %tag  :+  %9  $(bat p.bat)
@@ -207,7 +208,7 @@
     |=  f=$-(@ ?)
     ^-  gast
     :_  mem
-    =/  t  (pas 1 tos)
+    =/  t  (pas tos)
     ?~  t  |
     ?.  (f (puf tok.t))  |
     [[%t tok.t] sat.t sus]
@@ -227,8 +228,8 @@
     q(tree.pro [tree.pro.p tree.pro.q])
       %0
     :_  mem
-    ?:  =(0 n.main)  &  :: epsilon
-    =/  t  (pas n.main tos)
+    ?:  e.main  &  :: epsilon
+    =/  t  (pas tos)
     ?~  t  |
     [[%t tok.t] sat.t sus]
       %1
