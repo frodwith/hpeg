@@ -44,11 +44,15 @@
         [r+%nonterminal not+arrow]
           :-  %literal
         [soq [%tar not+soq dot] soq sp]
+          :-  %char
+        :+  %or
+          [t+'\\' (chas 't' 'n' ~)]
+        dot
           :-  %charclass
         :*  t+'['
             :*  %tar
                 not+t+']'
-                [%or [dot t+'-' dot] dot]
+                [%or [dot t+'-' dot] r+%char]
             ==
             t+']'
             sp
@@ -120,20 +124,24 @@
           ?>  ?=([%u %nt *] p.top)
           :-  name.p.top
           (expect-plan (seq-tail 2 q.top))
-        =/  top  (expect-seq t)
+        =/  top    (expect-seq t)
         =/  first  (item p.top)
         =/  rest   (turn (expect-tar q.top) item)
         [%u %gram (meg first rest)]
           :-  %pattern
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
-        =/  top  (expect-seq t)
-        =/  nut  (expect-plan p.top)
-        =/  mor  (expect-tar q.top)
         :+  %u  %plan
+        =/  top  (expect-seq t)
+        =/  mor=(lest tree.pep)
+          :-  p.top
+          %+  turn  (expect-tar q.top)
+          |=  t=tree.pep
+          (seq-tail 2 t)
         |-  ^-  plan
-        ?~  mor  nut
-        $(mor t.mor, nut [%or nut (expect-plan (seq-tail 2 i.mor))])
+        =/  p=plan  (expect-plan i.mor)
+        ?~  t.mor  p
+        [%or p $(mor t.mor)]
           :-  %alternative
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
@@ -184,7 +192,6 @@
         ==
           :-  %literal
         |=  [t=tree.pep *]
-        ~|  [%expect-literal t]
         :_  ~  ^-  tree.pep
         =/  inside  (expect-tar (seq-nth 2 t))
         :+  %u  %plan
@@ -193,6 +200,15 @@
         =/  tok=plan  t+(expect-token i.inside)
         ?~  t.inside  tok
         [tok $(inside t.inside)]
+          :-  %char
+        |=  [t=tree.pep *]
+        :_  ~  ^-  tree.pep
+        ?:  ?=(%t -.t)  t
+        :-  %t
+        ?+  (expect-token (seq-tail 1 t))  !!
+          %t  '\09'
+          %n  '\0a'
+        ==
           :-  %charclass
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
@@ -246,19 +262,28 @@
       =/  r    (pep ascii-cords no-memo peg-compiled tos ~ ~)
       ?>  ?=([%u %gram *] r)
       g.r
+    ?>  .=  peg-grammar
     %-  peg-parser
+::  from the lpeg paper, modified:
+::    restrict nonterminals to @tas
+::    escapes for accurate self-parsing
 '''
-grammar <- (nonterminal '<-' sp pattern)+
-pattern <- alternative ('/' sp alternative)*
+grammar     <- (nonterminal '<-' sp pattern)+
+pattern     <- alternative ('/' sp alternative)*
 alternative <- ([!&]? sp suffix)+
-suffix <- primary ([*+?] sp)*
-primary <- '(' sp pattern ')' sp / '.' sp / literal / charclass / nonterminal !'<-'
-literal <- ['] (!['] .)* ['] sp
-charclass <- '[' (!']' (. '-' . / .))* ']' sp
+suffix      <- primary ([*+?] sp)*
+primary     <- '(' sp pattern ')' sp
+             / '.' sp
+             / literal
+             / charclass
+             / nonterminal !'<-'
+literal     <- ['] (!['] .)* ['] sp
+char        <- '\' [tn] / .
+charclass   <- '[' ( !']' ( . '-' . / char ) )* ']' sp
 nonterminal <- [a-z] [-a-z]* sp
-sp <- [ \t\n]*
+sp          <- [ \t\n]*
 '''
-    ::%ok
+    %ok
 =>
 |%
 ::  as far as grammars are concerned, tokens are atoms.
