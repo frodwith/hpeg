@@ -38,6 +38,9 @@
         tar+[(chas '*' '+' '?' ~) sp]
           :-  %primary
         :+  %or  [t+'(' sp r+%pattern t+')' sp]
+        :+  %or  :^  %tag  %tag  [t+'{' t+':']
+          [r+%nonterminal r+%pattern t+'}' sp]
+        :+  %or  tag+mem+[t+'{' sp r+%pattern t+'}' sp]
         :+  %or  [t+'.' sp]
         :+  %or  r+%literal
         :+  %or  r+%charclass
@@ -106,12 +109,17 @@
     =/  seq-nth
       |=  [n=@ t=tree.pep]
       ~|  [%seq-nth n t]
-      (seq-head (seq-tail (dec n) t))
+      (seq-head (seq-tail n t))
     =/  expect-plan
       |=  t=tree.pep
       ~|  [%expect-plan t]
       ?>  ?=([%u %plan *] t)
       p.t
+    =/  expect-nonterminal
+      |=  t=tree.pep
+      ~|  [%expect-nonterminal t]
+      ?>  ?=([%u %nt *] t)
+      name.t
     =/  plan-actions=mean.pep
       %-  sam.pep
       :~  :-  %grammar
@@ -121,8 +129,7 @@
           |=  t=tree.pep
           ^-  (pair @tas plan)
           =/  top  (expect-seq t)
-          ?>  ?=([%u %nt *] p.top)
-          :-  name.p.top
+          :-  (expect-nonterminal p.top)
           (expect-plan (seq-tail 2 q.top))
         =/  top    (expect-seq t)
         =/  first  (item p.top)
@@ -185,15 +192,26 @@
           :-  %primary
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
-        ?+  t  (seq-nth 3 t)
+        ?+  t  (seq-nth 2 t)
           [%u %plan *]   t
           [%u %nt *]     u+plan+r+name.t
           [[%t %'.'] *]  u+plan+any+|
         ==
+          :-  %tag
+        |=  [t=tree.pep *]
+        :_  ~  ^-  tree.pep
+        =/  tel  (expect-seq (seq-tail 1 t))
+        =<  u+plan+tag+.
+        :-  (expect-nonterminal p.tel)
+        (expect-plan (seq-head q.tel))
+          :-  %mem
+        |=  [t=tree.pep *]
+        :_  ~  ^-  tree.pep
+        u+plan+mem+(expect-plan (seq-nth 2 t))
           :-  %literal
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
-        =/  inside  (expect-tar (seq-nth 2 t))
+        =/  inside  (expect-tar (seq-nth 1 t))
         :+  %u  %plan
         ?~  inside  any+&
         |-  ^-  plan
@@ -212,7 +230,7 @@
           :-  %charclass
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
-        =/  kids  (expect-tar (seq-nth 2 t))
+        =/  kids  (expect-tar (seq-nth 1 t))
         :+  %u  %plan
         ?~  kids  any+|
         =|  [s=(set @) r=(list (pair @ @))]
@@ -262,17 +280,22 @@
       =/  r    (pep ascii-cords no-memo peg-compiled tos ~ ~)
       ?>  ?=([%u %gram *] r)
       g.r
+    :::-  p=peg-grammar
+    ::^=  q
     ?>  .=  peg-grammar
     %-  peg-parser
 ::  from the lpeg paper, modified:
 ::    restrict nonterminals to @tas
 ::    escapes for accurate self-parsing
+::    added tag and memo syntax
 '''
 grammar     <- (nonterminal '<-' sp pattern)+
 pattern     <- alternative ('/' sp alternative)*
 alternative <- ([!&]? sp suffix)+
 suffix      <- primary ([*+?] sp)*
 primary     <- '(' sp pattern ')' sp
+             / {:tag '{:' nonterminal pattern '}' sp }
+             / {:mem '{' sp pattern '}' sp }
              / '.' sp
              / literal
              / charclass
@@ -364,7 +387,7 @@ sp          <- [ \t\n]*
   ::  alternatively, the tokenizer can lazily read tokens as requested
   ::  from an input string. This trades space for time, as redundant
   ::  work will be done when backtracking, but this makes sense for
-  ::  some tokenizers (ascii for example).
+  ::  some tokenizers (ascii cords for example).
   ::
   ::  puff maps tokens to atoms.
   ::  when tokens are characters, it should be the id function.
