@@ -38,9 +38,10 @@
         tar+[(chas '*' '+' '?' ~) sp]
           :-  %primary
         :+  %or  [t+'(' sp r+%pattern t+')' sp]
-        :+  %or  :^  %tag  %tag  [t+'{' t+':']
-          [r+%nonterminal r+%pattern t+'}' sp]
-        :+  %or  tag+mem+[t+'{' sp r+%pattern t+'}' sp]
+        :+  %or  :*  %tag  %&  %tag  [t+'{' t+':']
+          [r+%nonterminal wut+t+'!' r+%pattern t+'}' sp]
+        ==
+        :+  %or  tag+|+mem+[t+'{' sp r+%pattern t+'}' sp]
         :+  %or  [t+'.' sp]
         :+  %or  r+%literal
         :+  %or  r+%charclass
@@ -202,9 +203,12 @@
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
         =/  tel  (expect-seq (seq-tail 1 t))
+        =/  let  (expect-seq q.tel)
         =<  u+plan+tag+.
-        :-  (expect-nonterminal p.tel)
-        (expect-plan (seq-head q.tel))
+        :+  ?>  ?=(%o -.p.let)
+            ?=(^ u.p.let)
+          (expect-nonterminal p.tel)
+        (expect-plan (seq-head q.let))
           :-  %mem
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
@@ -295,8 +299,8 @@ pattern     <- alternative ('/' sp alternative)*
 alternative <- ([!&]? sp suffix)+
 suffix      <- primary ([*+?] sp)*
 primary     <- '(' sp pattern ')' sp
-             / {:tag '{:' nonterminal pattern '}' sp }
-             / {:mem '{' sp pattern '}' sp }
+             / {:tag! '{:' nonterminal '!'? pattern '}' sp }
+             / {:mem  '{' sp pattern '}' sp }
              / '.' sp
              / literal
              / charclass
@@ -315,22 +319,22 @@ sp          <- [ \t\n]*
 ::  reduces (puffs) tokens to atoms for t, run, and set.
 +$  gram  (pair @tas (map @tas plan))
 +$  plan
-  $~  [%any &]                    ::  empty
-  $^  [p=plan q=plan]             ::  sequence
-  $%  [%any e=?]                  ::  0 or 1 tokens
-      [%t puf=@]                  ::  reduced token
-      [%r name=@tas]              ::  rule reference
-      [%or p=plan q=plan]         ::  ordered choice
-      [%not p=plan]               ::  negative lookahead
-      [%and p=plan]               ::  positive lookahead
-      [%wut p=plan]               ::  ? optional
-      [%tar p=plan]               ::  * zero or more
-      [%lus p=plan]               ::  + one or more
-      [%rep n=@ p=plan]           ::  p exactly n times
-      [%run from=@ to=@]          ::  range [a-z]
-      [%set set=(set @)]          ::  class [abd]
-      [%tag name=@tas p=plan]     ::  labelled
-      [%mem p=plan]               ::  memoize
+  $~  [%any &]                       ::  empty
+  $^  [p=plan q=plan]                ::  sequence
+  $%  [%any e=?]                     ::  0 or 1 tokens
+      [%t puf=@]                     ::  reduced token
+      [%r name=@tas]                 ::  rule reference
+      [%or p=plan q=plan]            ::  ordered choice
+      [%not p=plan]                  ::  negative lookahead
+      [%and p=plan]                  ::  positive lookahead
+      [%wut p=plan]                  ::  ? optional
+      [%tar p=plan]                  ::  * zero or more
+      [%lus p=plan]                  ::  + one or more
+      [%rep n=@ p=plan]              ::  p exactly n times
+      [%run from=@ to=@]             ::  range [a-z]
+      [%set set=(set @)]             ::  class [abd]
+      [%tag yel=? name=@tas p=plan]  ::  labelled
+      [%mem p=plan]                  ::  memoize
   ==
 ++  wag                           ::  fragment for autocons types
   |*  [a=axis p=*]
