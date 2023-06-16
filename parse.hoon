@@ -87,8 +87,13 @@
     =/  expect-tar
       |=  t=tree.pep
       ~|  [%expect-tar t]
-      ?>  ?=(%r -.t)
-      kids.t
+      ?>  ?=(%i -.t)
+      l.t
+    =/  expect-lus
+      |=  t=tree.pep
+      ~|  [%expect-lus t]
+      ?>  ?=(%e -.t)
+      l.t
     =/  expect-token
       ::  this should work for any tree, so it feels like it should
       ::  be a wet gate and outside of pep. or inside pep, moist.
@@ -131,9 +136,9 @@
           =/  top  (expect-seq t)
           :-  (expect-nonterminal p.top)
           (expect-plan (seq-tail 2 q.top))
-        =/  top    (expect-seq t)
-        =/  first  (item p.top)
-        =/  rest   (turn (expect-tar q.top) item)
+        =/  l      (expect-lus t)
+        =/  first  (item i.l)
+        =/  rest   (turn t.l item)
         [%u %gram (meg first rest)]
           :-  %pattern
         |=  [t=tree.pep *]
@@ -164,11 +169,7 @@
             [%o %t %'!']  [%not suf]
             [%o %t %'&']  [%and suf]
           ==
-        =/  top   (expect-seq t)
-        =/  hed   (item p.top)
-        =/  kids  (expect-tar q.top)
-        ?~  kids  hed
-        :-  hed
+        =/  kids  (expect-lus t)
         |-  ^-  plan
         =/  p  (item i.kids)
         ?~  t.kids  p
@@ -322,10 +323,10 @@ sp          <- [ \t\n]*
       [%or p=plan q=plan]         ::  ordered choice
       [%not p=plan]               ::  negative lookahead
       [%and p=plan]               ::  positive lookahead
+      [%wut p=plan]               ::  ? optional
       [%tar p=plan]               ::  * zero or more
       [%lus p=plan]               ::  + one or more
       [%rep n=@ p=plan]           ::  p exactly n times
-      [%wut p=plan]               ::  ? optional
       [%run from=@ to=@]          ::  range [a-z]
       [%set set=(set @)]          ::  class [abd]
       [%tag name=@tas p=plan]     ::  labelled
@@ -407,9 +408,10 @@ sp          <- [ \t\n]*
     $^  [p=tree q=tree]
     $%  [%u usr]                 :: user
         [%t tok=tom]             :: token(s)
-        [%l name=@tas kid=tree]  :: labelled
-        [%o kid=$@(~ tree)]      :: ? 
-        [%r kids=(list tree)]    :: *
+        [%l name=@tas p=tree]    :: labelled
+        [%o u=$@(~ tree)]        :: ?
+        [%i l=(list tree)]       :: *
+        [%e l=(lest tree)]       :: +
     ==
   ::  semantic actions have state(sus) and access to the position
   ::  at the beginning and end of a match. they can transform
@@ -438,12 +440,13 @@ sp          <- [ \t\n]*
         [%2 =axis]                           ::  r
         [%3 p=code q=code]                   ::  or
         [%4 p=code]                          ::  not
-        [%5 p=code]                          ::  tar
-        [%6 p=code]                          ::  wut
-        [%7 from=@ to=@]                     ::  run
-        [%8 set=(set @)]                     ::  set
-        [%9 p=code sem=$@(@tas act)]         ::  tag
-        [%10 p=code]                         ::  mem
+        [%5 p=code]                          ::  wut
+        [%6 p=code]                          ::  tar
+        [%7 p=code]                          ::  lus
+        [%8 from=@ to=@]                     ::  run
+        [%9 set=(set @)]                     ::  set
+        [%10 p=code sem=$@(@tas act)]        ::  tag
+        [%11 p=code]                         ::  mem
     ==
   ::
   ::  gram -> woke as plan -> code
@@ -465,7 +468,7 @@ sp          <- [ \t\n]*
       ^-  $@(~ code)
       =/  sem  (~(get by mean) name)
       ?~  sem  ~
-      [%9 cod u.sem]
+      [%10 cod u.sem]
     ++  $  ^-  code
     ?-  -.bat
       ^     [$(bat p.bat) $(bat q.bat)]
@@ -475,32 +478,40 @@ sp          <- [ \t\n]*
       %or   3+[$(bat p.bat) $(bat q.bat)]
       %not  4+$(bat p.bat)
       %and  4+4+$(bat p.bat)
-      %tar  5+$(bat p.bat)
-      %wut  6+$(bat p.bat)
-      %lus  =/  c  $(bat p.bat)
-            [c %5 c]
+      %wut  5+$(bat p.bat)
+      %tar  6+$(bat p.bat)
+      %lus  7+$(bat p.bat)
       %rep  ?:  =(0 n.bat)  0+&
             =/  one=code  $(bat p.bat)
             =/  out=code  one
             |-  ^+  out
             ?:  =(0 n.bat)  out
             $(n.bat (dec n.bat), out [one out])
-      %run  7+[from.bat to.bat]
-      %set  8+set.bat
+      %run  8+[from.bat to.bat]
+      %set  9+set.bat
       %tag  =/  cod  $(bat p.bat)
             =/  sem  (test name.bat cod)
-            ?~  sem  [%9 cod name.bat]
+            ?~  sem  [%10 cod name.bat]
             sem
-      %mem  10+$(bat p.bat)
+      %mem  11+$(bat p.bat)
     ==  --
-  +$  pro   $@(? [=tree =tos =sus])        ::  internal parse product
-  +$  gast  [=pro =mem]                    ::  product and memory ghost
+  ++  pre   |$(r $@(? [r=r =tos =sus]))    ::  parsing result
+  +$  pro   (pre tree)                     ::  typical pre
+  ++  gest  |$(r [pro=(pre r) mem=mem])    ::  product and memory
+  +$  gast  (gest tree)                    ::  pro gest
   +$  look  $-([mem tos code] (unit pro))  ::  cache get
   +$  duct  $-([mem [tos code] pro] mem)   ::  cache put
   +$  hall  [=look =duct]                  ::  a way to remember pros
   ++  $
   |_  [toke hall exe =tos =sus =mem]
-  ++  $  p:run
+  ++  $  p:fin
+  ++  fin
+    ::   p=& means assert-success. unlikely.
+    ::   p=| means match failure (no explanation).
+    ::   otherwise, p is a match tree.
+    ::   q can be reused for incremental parsing.
+    =>  run
+    [p=?@(pro pro r.pro) q=mem]
   ++  tope  ::  apply predicate to next token
     |=  f=$-(@ ?)
     ^-  gast
@@ -509,12 +520,16 @@ sp          <- [ \t\n]*
     ?~  t  |
     ?.  (f (puf tok.t))  |
     [[%t tok.t] sat.t sus]
+  ++  loop  ::  apply match till it fails, list results
+    =|  out=(list tree)
+    |-  ^-  (gest (list tree))
+    =/  r   run
+    ?@  pro.r
+      ?:  pro.r  r
+      :_  mem.r
+      [(flop out) tos sus]
+    $(out [r.pro.r out], mem mem.r, tos tos.pro.r, sus sus.pro.r)
   ++  run
-    ::   p=& means assert-success. unlikely.
-    ::   p=| means match failure (no explanation).
-    ::   otherwise, p is a match tree.
-    ::   q can be reused for incremental parsing.
-    =<  [p=?@(pro pro tree.pro) q=mem]
     |-  ^-  gast
     ?-  -.main
       ^
@@ -522,54 +537,55 @@ sp          <- [ \t\n]*
     ?@  pro.p  ?.(pro.p p $(main q.main, mem mem.p))
     =/  q  $(main q.main, mem mem.p, tos tos.pro.p, sus sus.pro.p)
     ?@  pro.q  ?.(pro.q q [pro.p mem.q])
-    q(tree.pro [tree.pro.p tree.pro.q])
-      %0
+    q(r.pro [r.pro.p r.pro.q])
+      %0  ::  any
     :_  mem
     ?:  e.main  &  :: epsilon
     =/  t  (pas tos)
     ?~  t  |
     [[%t tok.t] sat.t sus]
-      %1
+      %1  ::  t
     (tope |=(a=@ =(puf.main a)))
-      %2
+      %2  ::  r
     $(main (wag axis.main bat))
-      %3
+      %3  ::  or
     =/  r  $(main p.main)
     ?.  ?=(%| pro.r)  r
     $(main q.main, mem mem.r)
-      %4
+      %4  ::  not
     =/  r  $(main p.main)
     :_  mem.r
     ?=(%| pro.r)
-      %5
-    =|  out=(list tree)
-    |-  ^-  gast
-    =/  r   ^$(main p.main)
-    ?@  pro.r
-      ?:  pro.r  r
-      :_  mem.r
-      [[%r (flop out)] tos sus]
-    $(out [tree.pro.r out], mem mem.r, tos tos.pro.r, sus sus.pro.r)
-      %6
+      %5  ::  wut
     =/  r  $(main p.main)
     :_  mem.r
     ?@  pro.r
       ?:  pro.r  &
       [[%o ~] tos sus]
-    [[%o tree.pro.r] tos.pro.r sus.pro.r]
-      %7
+    [[%o r.pro.r] tos.pro.r sus.pro.r]
+      %6  ::  tar
+    =/  r  loop(main p.main)
+    ?@  pro.r  r
+    r(r.pro i+r.pro.r)
+      %7  ::  lus
+    =/  p      $(main p.main)
+    ?@  pro.p  p
+    =/  q      loop(main p.main, tos tos.pro.p, sus sus.pro.p, mem mem.p)
+    ?@  pro.q  q
+    q(r.pro e+[r.pro.p r.pro.q])
+      %8  ::  run
     (tope |=(a=@ &((gte a from.main) (lte a to.main))))
-      %8
+      %9  ::  set
     (tope |=(a=@ (~(has in set.main) a)))
-      %9
+      %10  ::  tag
     =/  r  $(main p.main)
     ?@  pro.r  r
     ?@  sem.main
-      r(tree.pro [%l sem.main tree.pro.r])
-    =/  ser  (sem.main tree.pro.r sus.pro.r tos tos.pro.r)
+      r(r.pro [%l sem.main r.pro.r])
+    =/  ser  (sem.main r.pro.r sus.pro.r tos tos.pro.r)
     :_  mem.r
     [tree.ser tos.pro.r sus.ser]
-      %10
+      %11  ::  mem
     =/  key  [tos p.main]
     =/  got  (look mem key)
     ?^  got  [u.got mem]
