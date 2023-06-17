@@ -351,10 +351,10 @@ sp          <- [ \t\n]*
   ::  (wag axis bat) at runtime.
   |*  m=(map)
   =+  ::  count and flatten
-    =|  [n=@ kev=_~(tap by m)]
+    =|  [n=@ kev=(list _?~(m !! n.m))]
     |-  ^+  +<
     ?~  m   +<
-    =/  l   $(m l.m, n +(n))
+    =/  l   $(m l.m, n +(n), kev [n.m kev])
     $(m r.m, n n.l, kev kev.l)
   ?<  =(0 n)
   =*  p  ?~(m !! n.m)
