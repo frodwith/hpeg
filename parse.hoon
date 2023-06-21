@@ -27,21 +27,25 @@
       =/  sp=plan     r+%sp
       %-  meg
       :~  :-  %grammar
-        lus+[r+%nonterminal arrow sp r+%pattern]
+        lus+tag+def+[r+%nonterminal arrow sp r+%pattern]
           :-  %pattern
         :-  r+%alternative
         tar+[t+'/' sp r+%alternative]
           :-  %alternative
         lus+[wut+(chas '!' '&' ~) sp r+%suffix]
+          :-  %count
+        lus+[%run '0' '9']
           :-  %suffix
-        :-  r+%primary
-        tar+[(chas '*' '+' '?' ~) sp]
+        :-  r+%primary  :_  sp  :-  %wut
+        :+  %or  (chas '*' '+' '?' ~)
+        :-  t+'{'  :_  t+'}'
+        :+  %or  [t+',' r+%count]
+        [r+%count %wut t+',' wut+r+%count]
           :-  %primary
         :+  %or  [t+'(' sp r+%pattern t+')' sp]
-        :+  %or  :*  %tag  %&  %tag  [t+'{' t+':']
-          [r+%nonterminal wut+t+'!' r+%pattern t+'}' sp]
-        ==
-        :+  %or  tag+|+mem+[t+'{' sp r+%pattern t+'}' sp]
+        :+  %or  :-  t+'{'  :_  [t+'}' sp]
+          :+  %or  tag+mem+[t+'&' sp r+%pattern]
+          tag+tag+[t+':' r+%nonterminal wut+t+'!' r+%pattern]
         :+  %or  [t+'.' sp]
         :+  %or  r+%literal
         :+  %or  r+%charclass
@@ -71,6 +75,8 @@
       $%  [%nt name=@tas]
           [%plan p=plan]
           [%gram g=gram]
+          [%num n=@]
+          [%def name=@tas p=plan]
       ==
     =/  pep  (hpeg @ta ,[@ud @ud @ta] usr ,~ ,~)
     =/  ascii-cords=toke.pep
@@ -82,64 +88,79 @@
       (c(b i, d txt))
     =/  expect-seq
       |=  t=tree.pep
-      ~|  [%expect-seq t]
-      ?>  ?=(^ -.t)
-      t
+      ?^  -.t  t
+      ~|  [%seq t]  !!
     =/  expect-tar
       |=  t=tree.pep
-      ~|  [%expect-tar t]
-      ?>  ?=(%i -.t)
-      l.t
+      ^-  [n=@ ts=(list tree.pep)]
+      ?:  ?=(%r -.t)  +.t
+      ~|  [%tar t]  !!
     =/  expect-lus
       |=  t=tree.pep
-      ~|  [%expect-lus t]
-      ?>  ?=(%e -.t)
-      l.t
+      ^-  [n=@ ts=(lest tree.pep)]
+      ?:  ?=([%r @ ^ *] t)
+        [n.t i.l.t t.l.t]
+      ~|  [%lus t]  !!
+    =/  expect-wut
+      |=  t=tree.pep
+      ^-  $@(~ tree.pep)
+      =/  tar  (expect-tar t)
+      ?~  ts.tar  ~
+      ?~  t.ts.tar  i.ts.tar
+      ~|  [%wut t]  !!
     =/  expect-token
       ::  this should work for any tree, so it feels like it should
       ::  be a wet gate and outside of pep. or inside pep, moist.
       ::  or both.
       |=  t=tree.pep
-      ~|  [%expect-token t]
-      ?>  ?=(%t -.t)
-      tok.t
-    =/  seq-tail
+      ?:  ?=(%t -.t)  tok.t
+      ~|  [%token t]  !!
+    =/  seq-drop
       |=  [n=@ t=tree.pep]
-      ~|  [%seq-tail n t]
       ?:  =(0 n)  t
       $(n (dec n), t q:(expect-seq t))
     =/  seq-head
       |=  t=tree.pep
-      ~|  [%seq-head t]
       p:(expect-seq t)
     =/  seq-nth
       |=  [n=@ t=tree.pep]
       ~|  [%seq-nth n t]
-      (seq-head (seq-tail n t))
+      (seq-head (seq-drop n t))
     =/  expect-plan
       |=  t=tree.pep
-      ~|  [%expect-plan t]
-      ?>  ?=([%u %plan *] t)
-      p.t
+      ^-  plan
+      ?:  ?=([%u %plan *] t)  p.t
+      ~|  [%plan t]  !!
     =/  expect-nonterminal
       |=  t=tree.pep
-      ~|  [%expect-nonterminal t]
-      ?>  ?=([%u %nt *] t)
-      name.t
+      ^-  @tas
+      ?:  ?=([%u %nt *] t)  name.t
+      ~|  [%nonterminal t]  !!
+    =/  expect-count
+      |=  t=tree.pep
+      ^-  @
+      ?:  ?=([%u %num *] t)  n.t
+      ~|  [%count t]  !!
     =/  plan-actions=mean.pep
       %-  sam.pep
-      :~  :-  %grammar
+      :~  :-  %def
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
-        =/  item
+        :+  %u  %def
+        =/  top  (expect-seq t)
+        :-  (expect-nonterminal p.top)
+        (expect-plan (seq-drop 2 q.top))
+          :-  %grammar
+        |=  [t=tree.pep *]
+        :_  ~  ^-  tree.pep
+        =/  l      ts:(expect-lus t)
+        =/  expect-def
           |=  t=tree.pep
-          ^-  (pair @tas plan)
-          =/  top  (expect-seq t)
-          :-  (expect-nonterminal p.top)
-          (expect-plan (seq-tail 2 q.top))
-        =/  l      (expect-lus t)
-        =/  first  (item i.l)
-        =/  rest   (turn t.l item)
+          ?:  ?=([%u %def *] t)
+            [name.t p.t]
+          ~|  [%def t]  !!
+        =/  first  (expect-def i.l)
+        =/  rest   (turn t.l expect-def)
         [%u %gram (meg first rest)]
           :-  %pattern
         |=  [t=tree.pep *]
@@ -148,9 +169,9 @@
         =/  top  (expect-seq t)
         =/  mor=(lest tree.pep)
           :-  p.top
-          %+  turn  (expect-tar q.top)
+          %+  turn  ts:(expect-tar q.top)
           |=  t=tree.pep
-          (seq-tail 2 t)
+          (seq-drop 2 t)
         |-  ^-  plan
         =/  p=plan  (expect-plan i.mor)
         ?~  t.mor  p
@@ -161,40 +182,56 @@
         :+  %u  %plan
         =/  item
           |=  t=tree.pep
-          ~|  [%item t]
           ^-  plan
           =/  top  (expect-seq t)
-          =/  suf  (expect-plan (seq-tail 1 q.top))
-          ?+  p.top  !!
-            [%o ~]        suf
-            [%o %t %'!']  [%not suf]
-            [%o %t %'&']  [%and suf]
+          =/  suf  (expect-plan (seq-drop 1 q.top))
+          ?+  (expect-wut p.top)  !!
+            ~          suf
+            [%t %'!']  [%not suf]
+            [%t %'&']  [%and suf]
           ==
-        =/  kids  (expect-lus t)
+        =/  kids  ts:(expect-lus t)
         |-  ^-  plan
         =/  p  (item i.kids)
         ?~  t.kids  p
         [p $(kids t.kids)]
+          :-  %count
+        |=  [t=tree.pep *]
+        :_  ~  ^-  tree.pep
+        :+  %u  %num
+        =/  dig  (flop ts:(expect-tar t))
+        =|  [pac=_1 n=@]
+        |-  ^-  @
+        ?~  dig  n
+        $(n (add n (mul pac (sub (expect-token i.dig) '0'))))
           :-  %suffix
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
+        :+  %u  %plan  ^-  plan
         =/  top  (expect-seq t)
         =/  nut  (expect-plan p.top)
-        =/  suf  (expect-tar q.top)
-        :+  %u  %plan
-        |-  ^-  plan
+        =/  suf  (expect-wut (seq-head q.top))
         ?~  suf  nut
-        %=  $
-          suf  t.suf
-          nut  ?+  (expect-token (seq-head i.suf))  !!
-                 %'*'  [%tar nut]
-                 %'?'  [%wut nut]
-                 %'+'  [%lus nut]
-        ==     ==
+        ?@  -.suf
+          ?+  (expect-token suf)  !!
+            %'*'  [%tar nut]
+            %'?'  [%wut nut]
+            %'+'  [%lus nut]
+          ==
+        =/  qua  (expect-seq p:(expect-seq q.suf))
+        ?:  ?=([%t %','] p.qua)
+          [%max (expect-count q.qua) nut]
+        =/  min  (expect-count p.qua)
+        =/  two  (expect-wut q.qua)
+        ?~  two  [%rep min nut]
+        =/  max  (expect-wut (seq-drop 1 two))
+        ?~  max  [%min min nut]
+        [%mid min (expect-count max) nut]
           :-  %primary
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
         ?+  t  (seq-nth 2 t)
+          [[%t %'{'] *]  (seq-head q.t)
           [%u %plan *]   t
           [%u %nt *]     u+plan+r+name.t
           [[%t %'.'] *]  u+plan+any+|
@@ -202,13 +239,15 @@
           :-  %tag
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
-        =/  tel  (expect-seq (seq-tail 1 t))
+        =/  tel  (expect-seq (seq-drop 1 t))
+        =/  nam  (expect-nonterminal p.tel)
         =/  let  (expect-seq q.tel)
-        =<  u+plan+tag+.
-        :+  ?>  ?=(%o -.p.let)
-            ?=(^ u.p.let)
-          (expect-nonterminal p.tel)
-        (expect-plan (seq-head q.let))
+        =/  zap  (expect-wut p.let)
+        =/  pat  (expect-plan q.let)
+        :+  %u  %plan
+        ^-  plan
+        ?~  zap  [%tag nam pat]
+        [%yel nam pat]
           :-  %mem
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
@@ -216,26 +255,26 @@
           :-  %literal
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
-        =/  inside  (expect-tar (seq-nth 1 t))
+        =/  sin  ts:(expect-tar (seq-nth 1 t))
         :+  %u  %plan
-        ?~  inside  any+&
+        ?~  sin  any+&
         |-  ^-  plan
-        =/  tok=plan  t+(expect-token i.inside)
-        ?~  t.inside  tok
-        [tok $(inside t.inside)]
+        =/  tok=plan  t+(expect-token i.sin)
+        ?~  t.sin  tok
+        [tok $(sin t.sin)]
           :-  %char
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
         ?:  ?=(%t -.t)  t
         :-  %t
-        ?+  (expect-token (seq-tail 1 t))  !!
+        ?+  (expect-token (seq-drop 1 t))  !!
           %t  '\09'
           %n  '\0a'
         ==
           :-  %charclass
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
-        =/  kids  (expect-tar (seq-nth 1 t))
+        =/  kids  ts:(expect-tar (seq-nth 1 t))
         :+  %u  %plan
         ?~  kids  any+|
         =|  [s=(set @) r=(list (pair @ @))]
@@ -244,7 +283,7 @@
               next(s (~(put in s) tok.i.kids))
             =/  top  (expect-seq i.kids)
             =/  fo   (expect-token p.top)
-            =/  to   (expect-token (seq-tail 1 q.top))
+            =/  to   (expect-token (seq-drop 1 q.top))
             next(r [[fo to] r])
         ++  aset
           ^-  plan
@@ -272,7 +311,7 @@
         ^-  @tas
         %+  rep  3
         :-  (expect-token p.top)
-        (turn (expect-tar p:(expect-seq q.top)) expect-token)
+        (turn ts:(expect-tar p:(expect-seq q.top)) expect-token)
           :-  %sp
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
@@ -293,14 +332,24 @@
 ::    restrict nonterminals to @tas
 ::    escapes for accurate self-parsing
 ::    added tag and memo syntax
+::    added {1,2}-style suffixes
 '''
-grammar     <- (nonterminal '<-' sp pattern)+
+grammar     <- {:def nonterminal '<-' sp pattern}+
 pattern     <- alternative ('/' sp alternative)*
 alternative <- ([!&]? sp suffix)+
-suffix      <- primary ([*+?] sp)*
+count       <- [0-9]+
+suffix      <- primary (
+                 [*+?]
+                 / '{' (
+                   ',' count
+                   / count (',' count?)?
+                 ) '}'
+               )? sp
 primary     <- '(' sp pattern ')' sp
-             / {:tag! '{:' nonterminal '!'? pattern '}' sp }
-             / {:mem  '{' sp pattern '}' sp }
+             / '{' (
+                 {:mem '&' sp pattern }
+               / {:tag ':' nonterminal '!'? pattern }
+             ) '}' sp
              / '.' sp
              / literal
              / charclass
@@ -328,12 +377,16 @@ sp          <- [ \t\n]*
       [%not p=plan]                  ::  negative lookahead
       [%and p=plan]                  ::  positive lookahead
       [%wut p=plan]                  ::  ? optional
-      [%tar p=plan]                  ::  * zero or more
-      [%lus p=plan]                  ::  + one or more
-      [%rep n=@ p=plan]              ::  p exactly n times
+      [%tar p=plan]                  ::  * 0 or more
+      [%lus p=plan]                  ::  + 1 or more
+      [%min n=@ p=plan]              ::  at least n ps
+      [%max n=@ p=plan]              ::  at most n ps
+      [%mid from=@ to=@ p=plan]      ::  between from and to ps
+      [%rep n=@ p=plan]              ::  exactly n ps
       [%run from=@ to=@]             ::  range [a-z]
       [%set set=(set @)]             ::  class [abd]
-      [%tag yel=? name=@tas p=plan]  ::  labelled
+      [%tag name=@tas p=plan]        ::  group for semantic actions
+      [%yel name=@tas p=plan]        ::  tag with forced %l in output
       [%mem p=plan]                  ::  memoize
   ==
 ++  wag                           ::  fragment for autocons types
@@ -413,9 +466,7 @@ sp          <- [ \t\n]*
     $%  [%u usr]                 :: user
         [%t tok=tom]             :: token(s)
         [%l name=@tas p=tree]    :: labelled
-        [%o u=$@(~ tree)]        :: ?
-        [%i l=(list tree)]       :: *
-        [%e l=(lest tree)]       :: +
+        [%r n=@ l=(list tree)]   :: repetition
     ==
   ::  semantic actions have state(sus) and access to the position
   ::  at the beginning and end of a match. they can transform
@@ -444,13 +495,14 @@ sp          <- [ \t\n]*
         [%2 =axis]                           ::  r
         [%3 p=code q=code]                   ::  or
         [%4 p=code]                          ::  not
-        [%5 p=code]                          ::  wut
-        [%6 p=code]                          ::  tar
-        [%7 p=code]                          ::  lus
-        [%8 from=@ to=@]                     ::  run
-        [%9 set=(set @)]                     ::  set
-        [%10 p=code sem=$@(@tas act)]        ::  tag
-        [%11 p=code]                         ::  mem
+        [%5 n=@ p=code]                      ::  min
+        [%6 n=@ p=code]                      ::  max
+        [%7 from=@ to=@ p=code]              ::  mid
+        [%8 n=@ p=code]                      ::  rep
+        [%9 from=@ to=@]                     ::  run
+        [%10 set=(set @)]                    ::  set
+        [%11 p=code sem=$@(@tas act)]        ::  tag
+        [%12 p=code]                         ::  mem
     ==
   ::
   ::  gram -> woke as plan -> code
@@ -458,51 +510,50 @@ sp          <- [ \t\n]*
   ++  bake
     |=  [=gram =mean]
     ^-  exe
-    =+  (dox q.gram)
-    =-  =/  axe  (~(got by inx) p.gram)
-        =/  bat  $
-        [bat (take p.gram (wag axe bat))]
+    =+  %-  dox
+        =+  m=q.gram  ::  decorate named plans with tags for actions
+        |-  ^+  m
+        ?~  m  ~
+        :+  [p.n.m %tag p.n.m q.n.m]
+          $(m l.m)
+        $(m r.m)
+    =-  :-  -
+        (wag (~(got by inx) p.gram) -)
+    =<  $
     |%
-    ++  take
-      |=  [name=@tas cod=code]
-      =/  sem  (test name cod)
-      ?~(sem cod sem)
-    ++  test
-      |=  [name=@tas cod=code]
-      ^-  $@(~ code)
+    ++  tag
+      |=  [yel=? name=@tas p=plan]
+      ^-  code
+      =/  cod  ^$(bat p)
       =/  sem  (~(get by mean) name)
-      ?~  sem  ~
-      [%10 cod u.sem]
+      ?~  sem
+        ?.  yel  cod
+        [%11 cod name]
+      [%11 cod u.sem]
     ++  $  ^-  code
     ?-  -.bat
       ^     [$(bat p.bat) $(bat q.bat)]
       %any  0+e.bat
       %t    1+puf.bat
-      %r    (take name.bat [%2 (~(got by inx) name.bat)])
+      %r    2+(~(got by inx) name.bat)
       %or   3+[$(bat p.bat) $(bat q.bat)]
       %not  4+$(bat p.bat)
       %and  4+4+$(bat p.bat)
-      %wut  5+$(bat p.bat)
-      %tar  6+$(bat p.bat)
-      %lus  7+$(bat p.bat)
-      %rep  ?:  =(0 n.bat)  0+&
-            =/  one=code  $(bat p.bat)
-            =/  out=code  one
-            |-  ^+  out
-            ?:  =(0 n.bat)  out
-            $(n.bat (dec n.bat), out [one out])
-      %run  8+[from.bat to.bat]
-      %set  9+set.bat
-      %tag  =/  cod  $(bat p.bat)
-            =/  sem  (test name.bat cod)
-            ?~  sem  [%10 cod name.bat]
-            sem
-      %mem  11+$(bat p.bat)
+      %wut  7+[0 1 $(bat p.bat)]
+      %tar  5+[0 $(bat p.bat)]
+      %lus  5+[1 $(bat p.bat)]
+      %min  5+[n.bat $(bat p.bat)]
+      %max  6+[n.bat $(bat p.bat)]
+      %mid  7+[from.bat to.bat $(bat p.bat)]
+      %rep  8+[n.bat $(bat p.bat)]
+      %run  9+[from.bat to.bat]
+      %set  10+set.bat
+      %tag  (tag | name.bat p.bat)
+      %yel  (tag & name.bat p.bat)
+      %mem  12+$(bat p.bat)
     ==  --
-  ++  pre   |$(r $@(? [r=r =tos =sus]))    ::  parsing result
-  +$  pro   (pre tree)                     ::  typical pre
-  ++  gest  |$(r [pro=(pre r) mem=mem])    ::  product and memory
-  +$  gast  (gest tree)                    ::  pro gest
+  +$  pro   $@(? [r=tree =tos =sus])          ::  parsing result
+  +$  gast  [=pro =mem]                    ::  product and memory
   +$  look  $-([mem tos code] (unit pro))  ::  cache get
   +$  duct  $-([mem [tos code] pro] mem)   ::  cache put
   +$  hall  [=look =duct]                  ::  a way to remember pros
@@ -524,15 +575,21 @@ sp          <- [ \t\n]*
     ?~  t  |
     ?.  (f (puf tok.t))  |
     [[%t tok.t] sat.t sus]
-  ++  loop  ::  apply match till it fails, list results
-    =|  out=(list tree)
-    |-  ^-  (gest (list tree))
-    =/  r   run
+  ++  loop
+    |=  [min=@ max=@]
+    =|  [n=@ out=(list tree)]
+    |^  ^-  gast
+    =/  r  run
+    =.  mem  mem.r
     ?@  pro.r
-      ?:  pro.r  r
-      :_  mem.r
-      [(flop out) tos sus]
-    $(out [r.pro.r out], mem mem.r, tos tos.pro.r, sus sus.pro.r)
+      ?:  pro.r  &+mem
+      ?:  (lth n min)  |+mem
+      ret
+    =.  n  +(n)
+    ?.  |(=(0 max) (lte n max))  ret
+    $(out [r.pro.r out], tos tos.pro.r, sus sus.pro.r)
+    ++  ret  [[[%r n (flop out)] tos sus] mem]
+    --
   ++  run
     |-  ^-  gast
     ?-  -.main
@@ -560,28 +617,19 @@ sp          <- [ \t\n]*
     =/  r  $(main p.main)
     :_  mem.r
     ?=(%| pro.r)
-      %5  ::  wut
-    =/  r  $(main p.main)
-    :_  mem.r
-    ?@  pro.r
-      ?:  pro.r  &
-      [[%o ~] tos sus]
-    [[%o r.pro.r] tos.pro.r sus.pro.r]
-      %6  ::  tar
-    =/  r  loop(main p.main)
-    ?@  pro.r  r
-    r(r.pro i+r.pro.r)
-      %7  ::  lus
-    =/  p      $(main p.main)
-    ?@  pro.p  p
-    =/  q      loop(main p.main, tos tos.pro.p, sus sus.pro.p, mem mem.p)
-    ?@  pro.q  q
-    q(r.pro e+[r.pro.p r.pro.q])
-      %8  ::  run
+      %5  ::  min
+    (loop(main p.main) n.main 0)
+      %6  ::  max
+    (loop(main p.main) 0 n.main)
+      %7  ::  mid
+    (loop(main p.main) from.main to.main)
+      %8  ::  rep
+    (loop(main p.main) n.main n.main)
+      %9  ::  run
     (tope |=(a=@ &((gte a from.main) (lte a to.main))))
-      %9  ::  set
+      %10  ::  set
     (tope |=(a=@ (~(has in set.main) a)))
-      %10  ::  tag
+      %11  ::  tag
     =/  r  $(main p.main)
     ?@  pro.r  r
     ?@  sem.main
@@ -589,7 +637,7 @@ sp          <- [ \t\n]*
     =/  ser  (sem.main r.pro.r sus.pro.r tos tos.pro.r)
     :_  mem.r
     [tree.ser tos.pro.r sus.ser]
-      %11  ::  mem
+      %12  ::  mem
     =/  key  [tos p.main]
     =/  got  (look mem key)
     ?^  got  [u.got mem]
