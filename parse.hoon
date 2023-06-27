@@ -72,9 +72,8 @@
         tar+(chas ' ' 9 10 ~)
       ==
     =/  usr
-      $@  ~  ::  TODO: eliminate
-      $%  [%just ?(%sp %memo)]
-          [%tag name=@tas yel=?]
+      $@  ?(%sp %memo)
+      $%  [%tag name=@tas yel=?]
           [%nt name=@tas]
           [%plan p=plan]
           [%gram g=gram]
@@ -234,7 +233,7 @@
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
         :-  %u
-        ?:  ?=(%t -.t)  just+%memo
+        ?:  ?=(%t -.t)  %memo
         =/  tel  (expect-seq (seq-drop 1 t))
         =/  nam  (expect-nonterminal p.tel)
         =/  zap  (expect-wut q.tel)
@@ -253,10 +252,10 @@
         :+  %u  %plan  ^-  plan
         ?>  ?=(%u -.typ)
         =/  lan  (expect-plan pin)
-        ?+  +<.typ  !!
-          %just  [%mem lan]
-          %tag   =/  nap  [name.typ lan]
-                 ?:(yel.typ yel+nap tag+nap)
+        ?+  +.typ  !!
+          %memo     [%mem lan]
+          [%tag *]  =/  nap  [name.typ lan]
+                    ?:(yel.typ yel+nap tag+nap)
         ==
           :-  %primary
         |=  [t=tree.pep *]
@@ -328,7 +327,7 @@
           :-  %sp
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
-        u+~
+        u+%sp
       ==
     =/  peg-compiled=exe.pep  (bake.pep peg-grammar plan-actions)
     =/  peg-parser
@@ -454,8 +453,6 @@ sp          <- [ \t\n]*
 ::        this probably means forcibly respecting the order in the
 ::        charclass rule and only making sets when you have adjacent
 ::        (non-range-interspersed) characters in the set.
-::  also: wouldn't (:tag ...) and (# ... ) be nicer for tag and memo?
-::        then no confusion with quantifiers.
 |%
 ++  hpeg                          ::  types
   =|  $:  tom=mold                ::  token
