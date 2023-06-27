@@ -30,9 +30,9 @@
         lus+tag+def+[r+%nonterminal arrow sp r+%pattern]
           :-  %pattern
         :-  r+%alternative
-        tar+[t+'/' sp r+%alternative]
+        tar+tag+pat+[t+'/' sp r+%alternative]
           :-  %alternative
-        lus+[wut+(chas '!' '&' ~) sp r+%suffix]
+        lus+tag+alt+[wut+(chas '!' '&' ~) sp r+%suffix]
           :-  %count
         lus+[%run '0' '9']
           :-  %suffix
@@ -50,7 +50,7 @@
         :_  sp
         :-  %or  :_  t+'.'
         :^  %tag  %group  t+'('  :_  [sp r+%pattern t+')']
-        [%wut %tag %type %or t+'#' t+':' r+%nonterminal wut+t+'!']
+        [%wut %tag %type %or t+'#' t+':' r+%identifier wut+t+'!']
           :-  %literal
         [soq [%tar not+soq dot] soq sp]
           :-  %char
@@ -61,13 +61,15 @@
         :*  t+'['
             :*  %tar
                 not+t+']'
-                [%or [dot t+'-' dot] r+%char]
+                [%or tag+range+[dot t+'-' dot] r+%char]
             ==
             t+']'
             sp
         ==
+          :-  %identifier
+        [run+[%a %z] [%tar %or run+[%a %z] t+'-']]
           :-  %nonterminal
-        [run+[%a %z] [%tar %or t+'-' run+[%a %z]] sp]
+        tag+head+[r+%identifier sp]
           :-  %sp
         tar+(chas ' ' 9 10 ~)
       ==
@@ -78,6 +80,7 @@
           [%plan p=plan]
           [%gram g=gram]
           [%num n=@]
+          [%run from=@ to=@]
           [%def name=@tas p=plan]
       ==
     =/  pep  (hpeg @ta ,[@ud @ud @ta] usr ,~ ,~)
@@ -158,12 +161,16 @@
         =/  l      ts:(expect-lus t)
         =/  expect-def
           |=  t=tree.pep
-          ?:  ?=([%u %def *] t)
-            [name.t p.t]
+          ?:  ?=([%u %def d=*] t)
+            d.t
           ~|  [%def t]  !!
         =/  first  (expect-def i.l)
         =/  rest   (turn t.l expect-def)
         [%u %gram (meg first rest)]
+          :-  %pat
+        |=  [t=tree.pep *]
+        :_  ~  ^-  tree.pep
+        (seq-drop 2 t)
           :-  %pattern
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
@@ -171,30 +178,29 @@
         =/  top  (expect-seq t)
         =/  mor=(lest tree.pep)
           :-  p.top
-          %+  turn  ts:(expect-tar q.top)
-          |=  t=tree.pep
-          (seq-drop 2 t)
+          ts:(expect-tar q.top)
         |-  ^-  plan
         =/  p=plan  (expect-plan i.mor)
         ?~  t.mor  p
         [%or p $(mor t.mor)]
+          :-  %alt
+        |=  [t=tree.pep *]
+        :_  ~  ^-  tree.pep
+        :+  %u  %plan
+        =/  top  (expect-seq t)
+        =/  suf  (expect-plan (seq-drop 1 q.top))
+        ?+  (expect-wut p.top)  !!
+          ~          suf
+          [%t %'!']  [%not suf]
+          [%t %'&']  [%and suf]
+        ==
           :-  %alternative
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
         :+  %u  %plan
-        =/  item
-          |=  t=tree.pep
-          ^-  plan
-          =/  top  (expect-seq t)
-          =/  suf  (expect-plan (seq-drop 1 q.top))
-          ?+  (expect-wut p.top)  !!
-            ~          suf
-            [%t %'!']  [%not suf]
-            [%t %'&']  [%and suf]
-          ==
         =/  kids  ts:(expect-lus t)
         |-  ^-  plan
-        =/  p  (item i.kids)
+        =/  p  (expect-plan i.kids)
         ?~  t.kids  p
         [p $(kids t.kids)]
           :-  %count
@@ -283,39 +289,51 @@
           %t  '\09'
           %n  '\0a'
         ==
+          :-  %range
+        |=  [t=tree.pep *]
+        :_  ~  ^-  tree.pep
+        =/  top   (expect-seq t)
+        =/  fo=@  (expect-token p.top)
+        =/  to=@  (expect-token (seq-drop 1 q.top))
+        [%u %run fo to]
           :-  %charclass
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
         =/  kids  ts:(expect-tar (seq-nth 1 t))
         :+  %u  %plan
         ?~  kids  any+|
-        =|  [s=(set @) r=(list (pair @ @))]
+        =|  [s=(set @) out=(list (each (set @) (pair @ @)))]
         |^  ^-  plan
-            ?:  ?=(%t -.i.kids)
-              next(s (~(put in s) tok.i.kids))
-            =/  top  (expect-seq i.kids)
-            =/  fo   (expect-token p.top)
-            =/  to   (expect-token (seq-drop 1 q.top))
-            next(r [[fo to] r])
-        ++  aset
+            =*  k  i.kids
+            ?:  ?=(%t -.k)
+              next(s (~(put in s) tok.k))
+            %=  next
+              s    ~
+              out  ?>  ?=([%u %run *] k)
+                   =/  r  |+[from.k to.k]
+                   ?~  s  [r out]  ::  eliminate empty sets
+                   [r &+s out]
+            ==
+        ++  el
+          |=  e=(each (set @) (pair @ @))
           ^-  plan
-          ?:  ?=([* ~ ~] s)
-            t+n.s
-          set+s
+          ?-  -.e
+            %|  [%run p.e]
+            %&  =*  s  p.e
+                ?:  ?=([* ~ ~] s)  ::  handle singleton sets
+                  t+n.s
+                set+s
+          ==
         ++  next
-          ^-  plan
-          ?.  ?=(~ t.kids)
-            $(kids t.kids)
-          ?~  r  aset
-          =/  runs
-            |-  ^-  plan
-            =/  one  [%run p.i.r q.i.r]
-            ?~  t.r  one
-            [%or one $(r t.r)]
-          ?~  s  runs
-          [%or aset runs]
+          ?.  ?=(~ t.kids)  $(kids t.kids)
+          =?  out  ?=(^ s)  [&+s out]
+          ?~  out  !!
+          |-  ^-  plan
+          =/  i  (el i.out)
+          ?~  t.out  i
+          [%or $(out t.out) i]
         --
-          :-  %nonterminal
+          :-  %identifier
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
         =/  top  (expect-seq t)
@@ -323,7 +341,7 @@
         ^-  @tas
         %+  rep  3
         :-  (expect-token p.top)
-        (turn ts:(expect-tar p:(expect-seq q.top)) expect-token)
+        (turn ts:(expect-tar q.top) expect-token)
           :-  %sp
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
@@ -347,8 +365,8 @@
 ::    added {1,2}-style suffixes
 '''
 grammar     <- (:def nonterminal '<-' sp pattern)+
-pattern     <- alternative ('/' sp alternative)*
-alternative <- ([!&]? sp suffix)+
+pattern     <- alternative (:pat '/' sp alternative)*
+alternative <- (:alt [!&]? sp suffix)+
 count       <- [0-9]+
 suffix      <- primary (
                  [*+?]
@@ -358,7 +376,7 @@ suffix      <- primary (
                  ) '}'
                )? sp
 primary     <- (:head ((:group '('
-                  (:type '#' / (':' nonterminal '!'? ))?
+                  (:type '#' / (':' identifier '!'? ))?
                   sp pattern ')')
                 / '.' ) sp)
                / literal
@@ -366,8 +384,9 @@ primary     <- (:head ((:group '('
                / nonterminal !'<-'
 literal     <- ['] (!['] .)* ['] sp
 char        <- '\' [tn] / .
-charclass   <- '[' ( !']' ( . '-' . / char ) )* ']' sp
-nonterminal <- [a-z] [-a-z]* sp
+charclass   <- '[' ( !']' ( (:range . '-' .) / char ) )* ']' sp
+identifier  <- [a-z] [a-z-]*
+nonterminal <- (:head identifier sp)
 sp          <- [ \t\n]*
 '''
     %ok
@@ -453,6 +472,7 @@ sp          <- [ \t\n]*
 ::        this probably means forcibly respecting the order in the
 ::        charclass rule and only making sets when you have adjacent
 ::        (non-range-interspersed) characters in the set.
+::  also: clean up semantic actions more in the example grammar.
 |%
 ++  hpeg                          ::  types
   =|  $:  tom=mold                ::  token
