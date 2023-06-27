@@ -42,14 +42,15 @@
         :+  %or  [t+',' r+%count]
         [r+%count %wut t+',' wut+r+%count]
           :-  %primary
-        :+  %or  [t+'(' sp r+%pattern t+')' sp]
-        :+  %or  :-  t+'{'  :_  [t+'}' sp]
-          :+  %or  tag+mem+[t+'&' sp r+%pattern]
-          tag+tag+[t+':' r+%nonterminal wut+t+'!' r+%pattern]
-        :+  %or  [t+'.' sp]
-        :+  %or  r+%literal
-        :+  %or  r+%charclass
-        [r+%nonterminal not+arrow]
+        :-  %or  :_
+          :+  %or  r+%literal
+          :+  %or  r+%charclass
+          [r+%nonterminal not+arrow]
+        :+  %tag  %head
+        :_  sp
+        :-  %or  :_  t+'.'
+        :^  %tag  %group  t+'('  :_  [sp r+%pattern t+')']
+        [%wut %tag %type %or t+'#' t+':' r+%nonterminal wut+t+'!']
           :-  %literal
         [soq [%tar not+soq dot] soq sp]
           :-  %char
@@ -71,8 +72,10 @@
         tar+(chas ' ' 9 10 ~)
       ==
     =/  usr
-      $@  ~
-      $%  [%nt name=@tas]
+      $@  ~  ::  TODO: eliminate
+      $%  [%just ?(%sp %memo)]
+          [%tag name=@tas yel=?]
+          [%nt name=@tas]
           [%plan p=plan]
           [%gram g=gram]
           [%num n=@]
@@ -127,7 +130,7 @@
       ~|  [%seq-nth n t]
       (seq-head (seq-drop n t))
     =/  expect-plan
-      |=  t=tree.pep
+      |=  t=tree.pep  !.
       ^-  plan
       ?:  ?=([%u %plan *] t)  p.t
       ~|  [%plan t]  !!
@@ -227,31 +230,41 @@
         =/  max  (expect-wut (seq-drop 1 two))
         ?~  max  [%min min nut]
         [%mid min (expect-count max) nut]
-          :-  %primary
+          :-  %type
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
-        ?+  t  (seq-nth 2 t)
-          [[%t %'{'] *]  (seq-head q.t)
-          [%u %plan *]   t
-          [%u %nt *]     u+plan+r+name.t
-          [[%t %'.'] *]  u+plan+any+|
-        ==
-          :-  %tag
+        :-  %u
+        ?:  ?=(%t -.t)  just+%memo
+        =/  tel  (expect-seq (seq-drop 1 t))
+        =/  nam  (expect-nonterminal p.tel)
+        =/  zap  (expect-wut q.tel)
+        [%tag (expect-nonterminal p.tel) !?=(~ zap)]
+          :-  %head
+        |=  [t=tree.pep *]
+        :_  ~  ^-  tree.pep
+        (seq-head t)
+          :-  %group
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
         =/  tel  (expect-seq (seq-drop 1 t))
-        =/  nam  (expect-nonterminal p.tel)
-        =/  let  (expect-seq q.tel)
-        =/  zap  (expect-wut p.let)
-        =/  pat  (expect-plan q.let)
-        :+  %u  %plan
-        ^-  plan
-        ?~  zap  [%tag nam pat]
-        [%yel nam pat]
-          :-  %mem
+        =/  typ  (expect-wut p.tel)
+        =/  pin  (seq-head (seq-drop 1 q.tel))
+        ?~  typ  pin
+        :+  %u  %plan  ^-  plan
+        ?>  ?=(%u -.typ)
+        =/  lan  (expect-plan pin)
+        ?+  +<.typ  !!
+          %just  [%mem lan]
+          %tag   =/  nap  [name.typ lan]
+                 ?:(yel.typ yel+nap tag+nap)
+        ==
+          :-  %primary
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
-        u+plan+mem+(expect-plan (seq-nth 2 t))
+        ?+  t  t
+          [%u %nt *]  u+plan+r+name.t
+          [%t %'.']   u+plan+any+|
+        ==
           :-  %literal
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
@@ -334,7 +347,7 @@
 ::    added tag and memo syntax
 ::    added {1,2}-style suffixes
 '''
-grammar     <- {:def nonterminal '<-' sp pattern}+
+grammar     <- (:def nonterminal '<-' sp pattern)+
 pattern     <- alternative ('/' sp alternative)*
 alternative <- ([!&]? sp suffix)+
 count       <- [0-9]+
@@ -345,15 +358,13 @@ suffix      <- primary (
                    / count (',' count?)?
                  ) '}'
                )? sp
-primary     <- '(' sp pattern ')' sp
-             / '{' (
-                 {:mem '&' sp pattern }
-               / {:tag ':' nonterminal '!'? pattern }
-             ) '}' sp
-             / '.' sp
-             / literal
-             / charclass
-             / nonterminal !'<-'
+primary     <- (:head ((:group '('
+                  (:type '#' / (':' nonterminal '!'? ))?
+                  sp pattern ')')
+                / '.' ) sp)
+               / literal
+               / charclass
+               / nonterminal !'<-'
 literal     <- ['] (!['] .)* ['] sp
 char        <- '\' [tn] / .
 charclass   <- '[' ( !']' ( . '-' . / char ) )* ']' sp
@@ -430,6 +441,21 @@ sp          <- [ \t\n]*
   ^-  plan
   set+(~(gas in *(set @)) cs)
 --
+::  TODO: separate tokenizer state into a reader type, a 'transient'
+::        state type (reset across backtracking), and a 'persistent'
+::        state type that gets threaded around with the memo table.
+::        this allows us to have lazy token buffers, bounded or not,
+::        at the caller's pleasure, in order to avoid repeating
+::        tokenization work.
+::  also: after doing the above and verifying by print that it solves
+::        the repeated token reads, adjust the nonterminal rule so that
+::        it tries a-z before -. then run with an unbuffered tokenizer
+::        to verify that gets rid of a lot of the double token reads.
+::        this probably means forcibly respecting the order in the
+::        charclass rule and only making sets when you have adjacent
+::        (non-range-interspersed) characters in the set.
+::  also: wouldn't (:tag ...) and (# ... ) be nicer for tag and memo?
+::        then no confusion with quantifiers.
 |%
 ++  hpeg                          ::  types
   =|  $:  tom=mold                ::  token
@@ -505,7 +531,7 @@ sp          <- [ \t\n]*
         [%12 p=code]                         ::  mem
     ==
   ::
-  ::  gram -> woke as plan -> code
+  ::  gram -> exe as plan -> code
   +$  exe  [bat=code main=code]
   ++  bake
     |=  [=gram =mean]
