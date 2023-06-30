@@ -366,12 +366,12 @@
         ++  next
           ?.  ?=(~ t.kids)  $(kids t.kids)
           =?  out  ?=(^ s)  [&+s out]
-          =.  out  (flop out)
           ?~  out  !!
+          =/  r=plan  (el i.out)
+          =>  .(out t.out)
           |-  ^-  plan
-          =/  i  (el i.out)
-          ?~  t.out  i
-          [%or i $(out t.out)]
+          ?~  out  r
+          $(out t.out, r [%or (el i.out) r])
         --
         ::::
           :-  %identifier
