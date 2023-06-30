@@ -34,7 +34,7 @@
         tar+tag+pat+[t+'/' sp r+%alternative]
         ::::
           :-  %alternative
-        lus+tag+alt+[max+1+(chas '!' '&' ~) sp r+%suffix]
+        lus+tag+alt1+[max+1+(chas '!' '&' ~) sp r+%suffix]
         ::::
           :-  %count
         [%min 1 %run '0' '9']
@@ -71,7 +71,7 @@
         dot
         ::::
           :-  %identifier
-        [run+[%a %z] [%tar %or run+[%a %z] t+'-']]
+        [run+[%a %z] %tar %or run+[%a %z] %or run+[%'0' %'9'] t+'-']
         ::::
           :-  %nonterminal
         tag+head+[r+%identifier sp]
@@ -196,7 +196,7 @@
         ?~  t.mor  p
         [%or p $(mor t.mor)]
         ::::
-          :-  %alt
+          :-  %alt1
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
         :+  %u  %plan
@@ -366,11 +366,12 @@
         ++  next
           ?.  ?=(~ t.kids)  $(kids t.kids)
           =?  out  ?=(^ s)  [&+s out]
+          =.  out  (flop out)
           ?~  out  !!
           |-  ^-  plan
           =/  i  (el i.out)
           ?~  t.out  i
-          [%or $(out t.out) i]
+          [%or i $(out t.out)]
         --
         ::::
           :-  %identifier
@@ -407,7 +408,7 @@
 '''
 grammar     <- (:def nonterminal '<-' sp pattern)+
 pattern     <- alternative{1} (:pat '/' sp alternative)*
-alternative <- (:alt [!&]{,1} sp suffix)+
+alternative <- (:alt1 [!&]{,1} sp suffix)+
 count       <- [0-9]{1,}
 suffix      <- primary (
                  [*+?]
@@ -427,7 +428,7 @@ primary     <- (:head ((:group '('
                 ) sp)
                / nonterminal !'<-'
 char        <- '\\' [tn'\\] / .
-identifier  <- [a-z] [a-z-]*
+identifier  <- [a-z] [a-z0-9-]*
 nonterminal <- (:head identifier sp)
 sp          <- [ \t\n]*
 '''
