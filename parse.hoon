@@ -55,7 +55,7 @@
           :^  %tag  %group  t+'('  :_  [sp r+%pattern t+')']
           [%wut %tag %type %or t+'#' t+':' r+%identifier wut+t+'!']
         :+  %or  t+'.'
-        :+  %or  tag+literal+[soq [%tar not+soq dot] soq]
+        :+  %or  tag+literal+[soq [%tar not+soq r+%char] soq]
         :*  %tag  %charclass
             t+'['
             :*  %tar
@@ -67,7 +67,7 @@
         ::::
           :-  %char
         :+  %or
-          [t+'\\' (chas 't' 'n' ~)]
+          [t+'\\' (chas 't' 'n' '\\' '\'' ~)]
         dot
         ::::
           :-  %identifier
@@ -169,7 +169,7 @@
           :-  %grammar
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
-        =/  l      ts:(expect-lus t)
+        =/  l  ts:(expect-lus t)
         =/  expect-def
           |=  t=tree.pep
           ?:  ?=([%u %def d=*] t)
@@ -321,8 +321,10 @@
         ?:  ?=(%t -.t)  t
         :-  %t
         ?+  (expect-token (seq-drop 1 t))  !!
-          %t  '\09'
-          %n  '\0a'
+          %'\''  '\''
+          %'\\'  '\\'
+          %t     '\09'
+          %n     '\0a'
         ==
         ::::
           :-  %range
@@ -418,13 +420,13 @@ primary     <- (:head ((:group '('
                   (:type '#' / (':' identifier '!'? ))?
                   sp pattern ')')
                 / '.'
-                / (:literal ['] (!['] .)* ['])
+                / (:literal '\'' (!'\'' char)* '\'')
                 / (:charclass '['
                    ( !']' ( (:range . '-' .) / char ) )*
                   ']')
                 ) sp)
                / nonterminal !'<-'
-char        <- '\' [tn] / .
+char        <- '\\' [tn'\\] / .
 identifier  <- [a-z] [a-z-]*
 nonterminal <- (:head identifier sp)
 sp          <- [ \t\n]*
