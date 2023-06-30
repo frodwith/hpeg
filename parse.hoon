@@ -48,32 +48,27 @@
         [r+%count %mid 0 1 t+',' wut+r+%count]
         ::::
           :-  %primary
-        :-  %or  :_
-          :+  %or  r+%literal
-          :+  %or  r+%charclass
-          [r+%nonterminal not+arrow]
+        :-  %or  :_  [r+%nonterminal not+arrow]
         :+  %tag  %head
         :_  sp
-        :-  %or  :_  t+'.'
-        :^  %tag  %group  t+'('  :_  [sp r+%pattern t+')']
-        [%wut %tag %type %or t+'#' t+':' r+%identifier wut+t+'!']
-        ::::
-          :-  %literal
-        [soq [%tar not+soq dot] soq sp]
-          :-  %char
         :+  %or
-          [t+'\\' (chas 't' 'n' ~)]
-        dot
-        ::::
-          :-  %charclass
-        :*  t+'['
+          :^  %tag  %group  t+'('  :_  [sp r+%pattern t+')']
+          [%wut %tag %type %or t+'#' t+':' r+%identifier wut+t+'!']
+        :+  %or  t+'.'
+        :+  %or  tag+literal+[soq [%tar not+soq dot] soq]
+        :*  %tag  %charclass
+            t+'['
             :*  %tar
                 not+t+']'
                 [%or tag+range+[dot t+'-' dot] r+%char]
             ==
             t+']'
-            sp
         ==
+        ::::
+          :-  %char
+        :+  %or
+          [t+'\\' (chas 't' 'n' ~)]
+        dot
         ::::
           :-  %identifier
         [run+[%a %z] [%tar %or run+[%a %z] t+'-']]
@@ -422,13 +417,14 @@ suffix      <- primary (
 primary     <- (:head ((:group '('
                   (:type '#' / (':' identifier '!'? ))?
                   sp pattern ')')
-                / '.' ) sp)
-               / literal
-               / charclass
+                / '.'
+                / (:literal ['] (!['] .)* ['])
+                / (:charclass '['
+                   ( !']' ( (:range . '-' .) / char ) )*
+                  ']')
+                ) sp)
                / nonterminal !'<-'
-literal     <- ['] (!['] .)* ['] sp
 char        <- '\' [tn] / .
-charclass   <- '[' ( !']' ( (:range . '-' .) / char ) )* ']' sp
 identifier  <- [a-z] [a-z-]*
 nonterminal <- (:head identifier sp)
 sp          <- [ \t\n]*
