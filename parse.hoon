@@ -189,7 +189,9 @@
         :+  %u  %plan
         =/  top  (expect-seq t)
         =/  mor=(lest tree.pep)
-          :-  p.top
+          :-  =/  tar  (expect-tar p.top)
+              ?>  ?=([* ~] ts.tar)
+              i.ts.tar
           ts:(expect-tar q.top)
         |-  ^-  plan
         =/  p=plan  (expect-plan i.mor)
@@ -453,7 +455,7 @@ sp          <- [ \t\n]*
       [%lus p=plan]                  ::  + 1 or more
       [%min n=@ p=plan]              ::  at least n ps
       [%max n=@ p=plan]              ::  at most n ps
-      [%mid from=@ to=@ p=plan]      ::  between from and to ps
+      [%mid lo=@ hi=@ p=plan]        ::  between lo and hi ps
       [%rep n=@ p=plan]              ::  exactly n ps
       [%run from=@ to=@]             ::  range [a-z]
       [%set set=(set @)]             ::  class [abd]
@@ -581,10 +583,7 @@ sp          <- [ \t\n]*
         [%2 =axis]                           ::  r
         [%3 p=code q=code]                   ::  or
         [%4 p=code]                          ::  not
-        [%5 n=@ p=code]                      ::  min
-        [%6 n=@ p=code]                      ::  max
-        [%7 from=@ to=@ p=code]              ::  mid
-        [%8 n=@ p=code]                      ::  rep
+        [%5 lo=@ hi=@ p=code]                ::  min,max,mid,rep,+,*,?
         [%9 from=@ to=@]                     ::  run
         [%10 set=(set @)]                    ::  set
         [%11 p=code sem=$@(@tas act)]        ::  tag
@@ -625,21 +624,13 @@ sp          <- [ \t\n]*
       %or   3+[$(bat p.bat) $(bat q.bat)]
       %not  4+$(bat p.bat)
       %and  4+4+$(bat p.bat)
-      %wut  6+[1 $(bat p.bat)]
-      %tar  5+[0 $(bat p.bat)]
-      %lus  5+[1 $(bat p.bat)]
-      %min  5+[n.bat $(bat p.bat)]
-      %max  ?:  =(0 n.bat)  0+&
-            6+[n.bat $(bat p.bat)]
-      %mid  ?:  =(from.bat to.bat)
-              $(bat [%rep from.bat p.bat])
-            ?:  =(0 from.bat)
-              $(bat [%max to.bat p.bat])
-            7+[from.bat to.bat $(bat p.bat)]
-      %rep  ?:  =(0 n.bat)  0+&
-            =/  bin  $(bat p.bat)
-            ?:  =(1 n.bat)  bin
-            8+[n.bat bin]
+      %wut  5+[0 1 $(bat p.bat)]
+      %tar  5+[0 0 $(bat p.bat)]
+      %lus  5+[1 0 $(bat p.bat)]
+      %min  5+[n.bat 0 $(bat p.bat)]
+      %max  5+[0 n.bat $(bat p.bat)]
+      %mid  5+[lo.bat hi.bat $(bat p.bat)]
+      %rep  5+[n.bat n.bat $(bat p.bat)]
       %run  9+[from.bat to.bat]
       %set  10+set.bat
       %tag  (tag | name.bat p.bat)
@@ -669,21 +660,6 @@ sp          <- [ \t\n]*
     ?~  t  |
     ?.  (f (puf tok.t))  |
     [[%t tok.t] sat.t sus]
-  ++  loop
-    |=  [min=@ max=@]
-    =|  [n=@ out=(list tree)]
-    |^  ^-  gast
-    =/  r  run
-    =.  mem  mem.r
-    ?@  pro.r
-      ?:  pro.r  &+mem
-      ?:  (lth n min)  |+mem
-      ret
-    =.  n  +(n)
-    ?.  |(=(0 max) (lte n max))  ret
-    $(out [r.pro.r out], tos tos.pro.r, sus sus.pro.r)
-    ++  ret  [[[%r n (flop out)] tos sus] mem]
-    --
   ++  run
     |-  ^-  gast
     ?-  -.main
@@ -712,13 +688,21 @@ sp          <- [ \t\n]*
     :_  mem.r
     ?=(%| pro.r)
       %5  ::  min
-    (loop(main p.main) n.main 0)
-      %6  ::  max
-    (loop(main p.main) 0 n.main)
-      %7  ::  mid
-    (loop(main p.main) from.main to.main)
-      %8  ::  rep
-    (loop(main p.main) n.main n.main)
+    =+  [min=lo.main max=hi.main]
+    =>  .(main p.main)
+    =|  [n=@ out=(list tree)]
+    |^  ^-  gast
+    =/  r  ^$
+    =.  mem  mem.r
+    ?@  pro.r
+      ?:  pro.r  &+mem
+      ?:  (lth n min)  |+mem
+      ret
+    =.  n  +(n)
+    ?.  |(=(0 max) (lte n max))  ret
+    $(out [r.pro.r out], tos tos.pro.r, sus sus.pro.r)
+    ++  ret  [[[%r n (flop out)] tos sus] mem]
+    --
       %9  ::  run
     (tope |=(a=@ &((gte a from.main) (lte a to.main))))
       %10  ::  set
