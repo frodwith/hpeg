@@ -584,10 +584,10 @@ sp          <- [ \t\n]*
         [%3 p=code q=code]                   ::  or
         [%4 p=code]                          ::  not
         [%5 lo=@ hi=@ p=code]                ::  min,max,mid,rep,+,*,?
-        [%9 from=@ to=@]                     ::  run
-        [%10 set=(set @)]                    ::  set
-        [%11 p=code sem=$@(@tas act)]        ::  tag
-        [%12 p=code]                         ::  mem
+        [%6 from=@ to=@]                     ::  run
+        [%7 set=(set @)]                     ::  set
+        [%8 p=code sem=$@(@tas act)]         ::  tag
+        [%9 p=code]                          ::  mem
     ==
   ::
   ::  gram -> exe as plan -> code
@@ -613,8 +613,8 @@ sp          <- [ \t\n]*
       =/  sem  (~(get by mean) name)
       ?~  sem
         ?.  yel  cod
-        [%11 cod name]
-      [%11 cod u.sem]
+        [%8 cod name]
+      [%8 cod u.sem]
     ++  $  ^-  code
     ?-  -.bat
       ^     [$(bat p.bat) $(bat q.bat)]
@@ -631,11 +631,11 @@ sp          <- [ \t\n]*
       %max  5+[0 n.bat $(bat p.bat)]
       %mid  5+[lo.bat hi.bat $(bat p.bat)]
       %rep  5+[n.bat n.bat $(bat p.bat)]
-      %run  9+[from.bat to.bat]
-      %set  10+set.bat
+      %run  6+[from.bat to.bat]
+      %set  7+set.bat
       %tag  (tag | name.bat p.bat)
       %yel  (tag & name.bat p.bat)
-      %mem  12+$(bat p.bat)
+      %mem  9+$(bat p.bat)
     ==  --
   +$  pro   $@(? [r=tree =tos =sus])          ::  parsing result
   +$  gast  [=pro =mem]                    ::  product and memory
@@ -703,11 +703,11 @@ sp          <- [ \t\n]*
     $(out [r.pro.r out], tos tos.pro.r, sus sus.pro.r)
     ++  ret  [[[%r n (flop out)] tos sus] mem]
     --
-      %9  ::  run
+      %6  ::  run
     (tope |=(a=@ &((gte a from.main) (lte a to.main))))
-      %10  ::  set
+      %7  ::  set
     (tope |=(a=@ (~(has in set.main) a)))
-      %11  ::  tag
+      %8  ::  tag
     =/  r  $(main p.main)
     ?@  pro.r  r
     ?@  sem.main
@@ -715,7 +715,7 @@ sp          <- [ \t\n]*
     =/  ser  (sem.main r.pro.r sus.pro.r tos tos.pro.r)
     :_  mem.r
     [tree.ser tos.pro.r sus.ser]
-      %12  ::  mem
+      %9  ::  mem
     =/  key  [tos p.main]
     =/  got  (look mem key)
     ?^  got  [u.got mem]
