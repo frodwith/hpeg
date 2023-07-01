@@ -333,9 +333,9 @@
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
         =/  top   (expect-seq t)
-        =/  fo=@  (expect-token p.top)
-        =/  to=@  (expect-token (seq-drop 1 q.top))
-        [%u %run fo to]
+        =/  lo=@  (expect-token p.top)
+        =/  hi=@  (expect-token (seq-drop 1 q.top))
+        [%u %run lo hi]
         ::::
           :-  %charclass
         |=  [t=tree.pep *]
@@ -584,7 +584,7 @@ sp          <- [ \t\n]*
         [%3 p=code q=code]                   ::  or
         [%4 p=code]                          ::  not
         [%5 lo=@ hi=@ p=code]                ::  min,max,mid,rep,+,*,?
-        [%6 from=@ to=@]                     ::  run
+        [%6 lo=@ hi=@]                       ::  run
         [%7 set=(set @)]                     ::  set
         [%8 p=code sem=$@(@tas act)]         ::  tag
         [%9 p=code]                          ::  mem
@@ -687,7 +687,7 @@ sp          <- [ \t\n]*
     =/  r  $(main p.main)
     :_  mem.r
     ?=(%| pro.r)
-      %5  ::  min
+      %5  ::  loop
     =+  [min=lo.main max=hi.main]
     =>  .(main p.main)
     =|  [n=@ out=(list tree)]
@@ -704,7 +704,7 @@ sp          <- [ \t\n]*
     ++  ret  [[[%r n (flop out)] tos sus] mem]
     --
       %6  ::  run
-    (tope |=(a=@ &((gte a from.main) (lte a to.main))))
+    (tope |=(a=@ &((gte a lo.main) (lte a hi.main))))
       %7  ::  set
     (tope |=(a=@ (~(has in set.main) a)))
       %8  ::  tag
