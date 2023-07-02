@@ -51,11 +51,11 @@
         :-  %or  :_  [r+%nonterminal not+arrow]
         :+  %tag  %head
         :_  sp
-        :+  %or
-          :^  %tag  %group  t+'('  :_  [sp r+%pattern t+')']
-          [%wut %tag %type %or t+'#' t+':' r+%identifier wut+t+'!']
+        :+  %or  tag+grouped+[t+'(' sp r+%pattern t+')']
         :+  %or  t+'.'
         :+  %or  tag+literal+[soq [%tar not+soq r+%char] soq]
+        :+  %or  tag+tagged+[t+':' r+%identifier wut+t+'!' sp r+%pattern]
+        :+  %or  tag+memoized+[t+'#' sp r+%pattern]
         :*  %tag  %charclass
             t+'['
             :*  %tar
@@ -80,9 +80,8 @@
         tar+(chas ' ' 9 10 ~)
       ==
     =/  usr
-      $@  ?(%sp %memo)
-      $%  [%tag name=@tas yel=?]
-          [%nt name=@tas]
+      $@  %sp
+      $%  [%nt name=@tas]
           [%plan p=plan]
           [%gram g=gram]
           [%num n=@]
@@ -268,36 +267,32 @@
           %rep  [%rep n.suf nut]
         ==
         ::::
-          :-  %type
-        |=  [t=tree.pep *]
-        :_  ~  ^-  tree.pep
-        :-  %u
-        ?:  ?=(%t -.t)  %memo
-        =/  tel  (expect-seq (seq-drop 1 t))
-        =/  nam  (expect-nonterminal p.tel)
-        =/  zap  (expect-wut q.tel)
-        [%tag (expect-nonterminal p.tel) !?=(~ zap)]
-        ::::
           :-  %head
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
         (seq-head t)
         ::::
-          :-  %group
+          :-  %grouped
         |=  [t=tree.pep *]
         :_  ~  ^-  tree.pep
-        =/  tel  (expect-seq (seq-drop 1 t))
-        =/  typ  (expect-wut p.tel)
-        =/  pin  (seq-head (seq-drop 1 q.tel))
-        ?~  typ  pin
-        :+  %u  %plan  ^-  plan
-        ?>  ?=(%u -.typ)
-        =/  lan  (expect-plan pin)
-        ?+  +.typ  !!
-          %memo     [%mem lan]
-          [%tag *]  =/  nap  [name.typ lan]
-                    ?:(yel.typ yel+nap tag+nap)
-        ==
+        (seq-nth 2 t)
+        ::::
+          :-  %tagged
+        |=  [t=tree.pep *]
+        :_  ~  ^-  tree.pep
+        =>  .(t (expect-seq (seq-drop 1 t)))
+        =/  nym  (expect-nonterminal p.t)
+        =>  .(t (expect-seq q.t))
+        =/  zap  (expect-wut p.t)
+        =/  pin  (expect-plan (seq-drop 1 q.t))
+        =/  nap  [nym pin]
+        :+  %u  %plan
+        ?~(zap tag+nap yel+nap)
+        ::::
+          :-  %memoized
+        |=  [t=tree.pep *]
+        :_  ~  ^-  tree.pep
+        u+plan+mem+(expect-plan (seq-drop 2 t))
         ::::
           :-  %primary
         |=  [t=tree.pep *]
@@ -419,11 +414,12 @@ suffix      <- primary (
                    / count (',' count?){0,1}
                  ) '}')
                )? sp
-primary     <- (:head ((:group '('
-                  (:type '#' / (':' identifier '!'? ))?
-                  sp pattern ')')
+primary     <- (:head (
+                  (:grouped '(' sp pattern ')')
                 / '.'
                 / (:literal '\'' (!'\'' char)* '\'')
+                / (:tagged ':' identifier '!'? sp pattern)
+                / (:memoized '#' sp pattern)
                 / (:charclass '['
                    ( !']' ( (:range . '-' .) / char ) )*
                   ']')
@@ -431,7 +427,7 @@ primary     <- (:head ((:group '('
                / nonterminal !'<-'
 char        <- '\\' [tn'\\] / .
 identifier  <- [a-z] [a-z0-9-]*
-nonterminal <- (:head identifier sp)
+nonterminal <- :head identifier sp
 sp          <- [ \t\n]*
 '''
     %ok
