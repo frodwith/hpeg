@@ -579,7 +579,7 @@ sp          <- [ \t\n]*
         [%2 =axis]                           ::  r
         [%3 p=code q=code]                   ::  or
         [%4 p=code]                          ::  not
-        [%5 lo=@ hi=@ p=code]                ::  min,max,mid,rep,+,*,?
+        [%5 p=code lo=@ hi=@]                ::  min,max,mid,rep,+,*,?
         [%6 lo=@ hi=@]                       ::  run
         [%7 set=(set @)]                     ::  set
         [%8 p=code sem=$@(@tas act)]         ::  tag
@@ -620,20 +620,20 @@ sp          <- [ \t\n]*
       %or   3+[$(bat p.bat) $(bat q.bat)]
       %not  4+$(bat p.bat)
       %and  4+4+$(bat p.bat)
-      %wut  5+[0 1 $(bat p.bat)]
-      %tar  5+[0 0 $(bat p.bat)]
-      %lus  5+[1 0 $(bat p.bat)]
-      %min  5+[n.bat 0 $(bat p.bat)]
-      %max  5+[0 n.bat $(bat p.bat)]
-      %mid  5+[lo.bat hi.bat $(bat p.bat)]
-      %rep  5+[n.bat n.bat $(bat p.bat)]
+      %wut  5+[$(bat p.bat) 0 1]
+      %tar  5+[$(bat p.bat) 0 0]
+      %lus  5+[$(bat p.bat) 1 0]
+      %min  5+[$(bat p.bat) n.bat 0]
+      %max  5+[$(bat p.bat) 0 n.bat]
+      %mid  5+[$(bat p.bat) lo.bat hi.bat]
+      %rep  5+[$(bat p.bat) n.bat n.bat]
       %run  6+[from.bat to.bat]
       %set  7+set.bat
       %tag  (tag | name.bat p.bat)
       %yel  (tag & name.bat p.bat)
       %mem  9+$(bat p.bat)
     ==  --
-  +$  pro   $@(? [r=tree =tos =sus])          ::  parsing result
+  +$  pro   $@(? [r=tree =tos =sus])       ::  parsing result
   +$  gast  [=pro =mem]                    ::  product and memory
   +$  look  $-([mem tos code] (unit pro))  ::  cache get
   +$  duct  $-([mem [tos code] pro] mem)   ::  cache put
@@ -684,7 +684,7 @@ sp          <- [ \t\n]*
     :_  mem.r
     ?=(%| pro.r)
       %5  ::  loop
-    =+  [min=lo.main max=hi.main]
+    =+  [inf==(0 hi.main) min=lo.main max=hi.main]
     =>  .(main p.main)
     =|  [n=@ out=(list tree)]
     |^  ^-  gast
@@ -695,7 +695,7 @@ sp          <- [ \t\n]*
       ?:  (lth n min)  |+mem
       ret
     =.  n  +(n)
-    ?.  |(=(0 max) (lte n max))  ret
+    ?.  |(inf (lte n max))  ret
     $(out [r.pro.r out], tos tos.pro.r, sus sus.pro.r)
     ++  ret  [[[%r n (flop out)] tos sus] mem]
     --
