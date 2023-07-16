@@ -1,6 +1,15 @@
 ::  at some point a visualizer tool would be cool,
 ::  but we probably do that in javascript. or with mark's
 ::  new ncurses stuff?  following guido's visualiser?
+::
+::  next step: rearrange the code.
+::  separate out into sur and lib files,
+::  have a library of useful helper functions, a library
+::  for parsing the dsl, a generator that runs this test.
+::
+::  a json parser
+::
+::  maybe a little concatenative language based on nock 7 ;)
 !:
 :-  %say
 |=  *
@@ -500,20 +509,6 @@ sp          <- [ \t\n]*
   ^-  plan
   set+(~(gas in *(set @)) cs)
 --
-::  TODO: separate tokenizer state into a reader type, a 'transient'
-::        state type (reset across backtracking), and a 'persistent'
-::        state type that gets threaded around with the memo table.
-::        this allows us to have lazy token buffers, bounded or not,
-::        at the caller's pleasure, in order to avoid repeating
-::        tokenization work.
-::  also: after doing the above and verifying by print that it solves
-::        the repeated token reads, adjust the nonterminal rule so that
-::        it tries a-z before -. then run with an unbuffered tokenizer
-::        to verify that gets rid of a lot of the double token reads.
-::        this probably means forcibly respecting the order in the
-::        charclass rule and only making sets when you have adjacent
-::        (non-range-interspersed) characters in the set.
-::  also: clean up semantic actions more in the example grammar.
 |%
 ++  hpeg                          ::  types
   =|  $:  tom=mold                ::  token
@@ -523,7 +518,13 @@ sp          <- [ \t\n]*
           mem=mold                ::  memoize state
       ==
   |@
-  ::  it is recommended to tokenize eagerly in order to efficiently
+  ::  The tokenizer doesn't have persistent state across backtracking,
+  ::  and so can't avoid repeating work when backtracking happens.
+  ::  A lot of thought convinced us this was correct: you can't usefully
+  ::  avoid repeating work without getting tokens "pushed back" in the
+  ::  correct order during backtracking, and that's too expensive to be
+  ::  worth the savings you'd get by not repeating tokenizer work.
+  ::  it is therefore recommended to tokenize eagerly in order to
   ::  support backtracking: in that case the tokenizer state
   ::  usually contains the list of remaining tokens.
   ::  alternatively, the tokenizer can lazily read tokens as requested
@@ -579,7 +580,9 @@ sp          <- [ \t\n]*
         [%2 =axis]                           ::  r
         [%3 p=code q=code]                   ::  or
         [%4 p=code]                          ::  not
-        [%5 p=code lo=@ hi=@]                ::  min,max,mid,rep,+,*,?
+        ::  5's n can be shortened to one atom for compactness:
+        ::  0->[0 0], 1->[1 0], 2->[0 1], n->[n-1 n-1]
+        [%5 p=code n=$@(@ [lo=@ hi=@])]      ::  min,max,mid,rep,+,*,?
         [%6 lo=@ hi=@]                       ::  run
         [%7 set=(set @)]                     ::  set
         [%8 p=code sem=$@(@tas act)]         ::  tag
@@ -620,13 +623,17 @@ sp          <- [ \t\n]*
       %or   3+[$(bat p.bat) $(bat q.bat)]
       %not  4+$(bat p.bat)
       %and  4+4+$(bat p.bat)
-      %wut  5+[$(bat p.bat) 0 1]
-      %tar  5+[$(bat p.bat) 0 0]
-      %lus  5+[$(bat p.bat) 1 0]
+      %wut  5+[$(bat p.bat) 2]
+      %tar  5+[$(bat p.bat) 0]
+      %lus  5+[$(bat p.bat) 1]
       %min  5+[$(bat p.bat) n.bat 0]
       %max  5+[$(bat p.bat) 0 n.bat]
       %mid  5+[$(bat p.bat) lo.bat hi.bat]
-      %rep  5+[$(bat p.bat) n.bat n.bat]
+      %rep  =-  5+[$(bat p.bat) -]
+            ?+  n.bat  +(n.bat)
+              %0  0     ::  [0 0] means *
+              %1  [1 1] ::  weird but allowed
+            ==
       %run  6+[from.bat to.bat]
       %set  7+set.bat
       %tag  (tag | name.bat p.bat)
@@ -684,7 +691,13 @@ sp          <- [ \t\n]*
     :_  mem.r
     ?=(%| pro.r)
       %5  ::  loop
-    =+  [inf==(0 hi.main) min=lo.main max=hi.main]
+    =/  [inf=? min=@ max=@]
+      ?+  n.main  =+(n=(dec n.main) [| n n])
+        ^   [=(0 hi.n.main) lo.n.main hi.n.main]
+        %0  [& 0 0]
+        %1  [& 1 0]
+        %2  [| 0 1]
+      ==
     =>  .(main p.main)
     =|  [n=@ out=(list tree)]
     |^  ^-  gast
