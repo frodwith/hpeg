@@ -115,46 +115,7 @@
   ?:  (gte i len)  ~
   :_  [+(i) +<+]
   (c(b i, d txt))
-=/  expect-seq
-  |=  t=tree.pep
-  ?^  -.t  t
-  ~|  [%seq t]  !!
-=/  expect-tar
-  |=  t=tree.pep
-  ^-  [n=@ ts=(list tree.pep)]
-  ?:  ?=(%r -.t)  +.t
-  ~|  [%tar t]  !!
-=/  expect-lus
-  |=  t=tree.pep
-  ^-  [n=@ ts=(lest tree.pep)]
-  ?:  ?=([%r @ ^ *] t)
-    [n.t i.l.t t.l.t]
-  ~|  [%lus t]  !!
-=/  expect-wut
-  |=  t=tree.pep
-  ^-  $@(~ tree.pep)
-  =/  tar  (expect-tar t)
-  ?~  ts.tar  ~
-  ?~  t.ts.tar  i.ts.tar
-  ~|  [%wut t]  !!
-=/  expect-token
-  ::  this should work for any tree, so it feels like it should
-  ::  be a wet gate and outside of pep. or inside pep, moist.
-  ::  or both.
-  |=  t=tree.pep
-  ?:  ?=(%t -.t)  tok.t
-  ~|  [%token t]  !!
-=/  seq-drop
-  |=  [n=@ t=tree.pep]
-  ?:  =(0 n)  t
-  $(n (dec n), t q:(expect-seq t))
-=/  seq-head
-  |=  t=tree.pep
-  p:(expect-seq t)
-=/  seq-nth
-  |=  [n=@ t=tree.pep]
-  ~|  [%seq-nth n t]
-  (seq-head (seq-drop n t))
+=/  x  tool.pib
 =/  expect-plan
   |=  t=tree.pep  !.
   ^-  plan
@@ -176,14 +137,14 @@
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
     :+  %u  %def
-    =/  top  (expect-seq t)
+    =/  top  (seq.x t)
     :-  (expect-nonterminal p.top)
-    (expect-plan (seq-drop 2 q.top))
+    (expect-plan (drop.x 2 q.top))
     ::::
       :-  %grammar
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
-    =/  l  ts:(expect-lus t)
+    =/  l  ts:(lus.x t)
     =/  expect-def
       |=  t=tree.pep
       ?:  ?=([%u %def d=*] t)
@@ -195,18 +156,18 @@
       :-  %pat
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
-    (seq-drop 2 t)
+    (drop.x 2 t)
     ::::
       :-  %pattern
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
     :+  %u  %plan
-    =/  top  (expect-seq t)
+    =/  top  (seq.x t)
     =/  mor=(lest tree.pep)
-      :-  =/  tar  (expect-tar p.top)
+      :-  =/  tar  (tar.x p.top)
           ?>  ?=([* ~] ts.tar)
           i.ts.tar
-      ts:(expect-tar q.top)
+      ts:(tar.x q.top)
     |-  ^-  plan
     =/  p=plan  (expect-plan i.mor)
     ?~  t.mor  p
@@ -216,9 +177,9 @@
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
     :+  %u  %plan
-    =/  top  (expect-seq t)
-    =/  suf  (expect-plan (seq-drop 1 q.top))
-    ?+  (expect-wut p.top)  !!
+    =/  top  (seq.x t)
+    =/  suf  (expect-plan (drop.x 1 q.top))
+    ?+  (wut.x p.top)  !!
       ~          suf
       [%t %'!']  [%not suf]
       [%t %'&']  [%and suf]
@@ -228,7 +189,7 @@
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
     :+  %u  %plan
-    =/  kids  ts:(expect-lus t)
+    =/  kids  ts:(lus.x t)
     |-  ^-  plan
     =/  p  (expect-plan i.kids)
     ?~  t.kids  p
@@ -237,27 +198,27 @@
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
     :+  %u  %num
-    =/  dig  (flop ts:(expect-tar t))
+    =/  dig  (flop ts:(tar.x t))
     =|  [pac=_1 n=@]
     |-  ^-  @
     ?~  dig  n
     %=  $
       dig  t.dig
-      n    (add n (mul pac (sub (expect-token i.dig) '0')))
+      n    (add n (mul pac (sub (token.x i.dig) '0')))
     ==
     ::::
       :-  %quantifier
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
     ~|  [%quantifier t]
-    =/  qua  (expect-seq (seq-nth 1 t))
+    =/  qua  (seq.x (nth.x 1 t))
     :-  %u
     ?:  ?=([%t %','] p.qua)
       [%max (expect-count q.qua)]
     =/  min  (expect-count p.qua)
-    =/  two  (expect-wut q.qua)
+    =/  two  (wut.x q.qua)
     ?~  two  [%rep min]
-    =/  max  (expect-wut (seq-drop 1 two))
+    =/  max  (wut.x (drop.x 1 two))
     ?~  max  [%min min]
     [%mid min (expect-count max)]
     ::::
@@ -265,12 +226,12 @@
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
     :+  %u  %plan  ^-  plan
-    =/  top  (expect-seq t)
+    =/  top  (seq.x t)
     =/  nut  (expect-plan p.top)
-    =/  suf  (expect-wut (seq-head q.top))
+    =/  suf  (wut.x (head.x q.top))
     ?~  suf  nut
     ?.  ?=(%u -.suf)
-      ?+  (expect-token suf)  !!
+      ?+  (token.x suf)  !!
         %'*'  [%tar nut]
         %'?'  [%wut nut]
         %'+'  [%lus nut]
@@ -285,21 +246,21 @@
       :-  %head
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
-    (seq-head t)
+    (head.x t)
     ::::
       :-  %grouped
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
-    (seq-nth 2 t)
+    (nth.x 2 t)
     ::::
       :-  %tagged
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
-    =>  .(t (expect-seq (seq-drop 1 t)))
+    =>  .(t (seq.x (drop.x 1 t)))
     =/  nym  (expect-nonterminal p.t)
-    =>  .(t (expect-seq q.t))
-    =/  zap  (expect-wut p.t)
-    =/  pin  (expect-plan (seq-drop 1 q.t))
+    =>  .(t (seq.x q.t))
+    =/  zap  (wut.x p.t)
+    =/  pin  (expect-plan (drop.x 1 q.t))
     =/  nap  [nym pin]
     :+  %u  %plan
     ?~(zap tag+nap yel+nap)
@@ -307,7 +268,7 @@
       :-  %memoized
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
-    u+plan+mem+(expect-plan (seq-drop 2 t))
+    u+plan+mem+(expect-plan (drop.x 2 t))
     ::::
       :-  %primary
     |=  [t=tree.pep *]
@@ -320,11 +281,11 @@
       :-  %literal
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
-    =/  sin  ts:(expect-tar (seq-nth 1 t))
+    =/  sin  ts:(tar.x (nth.x 1 t))
     :+  %u  %plan
     ?~  sin  any+&
     |-  ^-  plan
-    =/  tok=plan  t+(expect-token i.sin)
+    =/  tok=plan  t+(token.x i.sin)
     ?~  t.sin  tok
     [tok $(sin t.sin)]
       :-  %char
@@ -332,7 +293,7 @@
     :_  ~  ^-  tree.pep
     ?:  ?=(%t -.t)  t
     :-  %t
-    ?+  (expect-token (seq-drop 1 t))  !!
+    ?+  (token.x (drop.x 1 t))  !!
       %'\''  '\''
       %'\\'  '\\'
       %t     '\09'
@@ -342,15 +303,15 @@
       :-  %range
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
-    =/  top   (expect-seq t)
-    =/  lo=@  (expect-token p.top)
-    =/  hi=@  (expect-token (seq-drop 1 q.top))
+    =/  top   (seq.x t)
+    =/  lo=@  (token.x p.top)
+    =/  hi=@  (token.x (drop.x 1 q.top))
     [%u %run lo hi]
     ::::
       :-  %charclass
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
-    =/  kids  ts:(expect-tar (seq-nth 1 t))
+    =/  kids  ts:(tar.x (nth.x 1 t))
     :+  %u  %plan
     ?~  kids  any+|
     =|  [s=(set @) out=(list (each (set @) (pair @ @)))]
@@ -389,12 +350,12 @@
       :-  %identifier
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
-    =/  top  (expect-seq t)
+    =/  top  (seq.x t)
     :+  %u  %nt
     ^-  @tas
     %+  rep  3
-    :-  (expect-token p.top)
-    (turn ts:(expect-tar q.top) expect-token)
+    :-  (token.x p.top)
+    (turn ts:(tar.x q.top) token.x)
     ::::
       :-  %sp
     |=  [t=tree.pep *]

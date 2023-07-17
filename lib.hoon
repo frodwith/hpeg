@@ -44,6 +44,44 @@
 =|  poly
 |@  
 ++  sur  ~(. ^sur +<)
+++  tool  !.
+  |%
+  ++  seq
+    |=  t=tree:sur
+    ?^  -.t  t
+    ~|([%seq t] !!)
+  ++  tar
+    |=  t=tree:sur
+    ^-  [n=@ ts=(list tree:sur)]
+    ?:  ?=(%r -.t)  +.t
+    ~|([%tar t] !!)
+  ++  lus
+    |=  t=tree:sur
+    ^-  [n=@ ts=(lest tree:sur)]
+    =/  r  (tar t)
+    ?^  ts.r  r
+    ~|([%lus t] !!)
+  ++  wut
+    |=  t=tree:sur
+    ^-  $@(~ tree:sur)
+    =/  r  (tar t)
+    ?~  ts.r    ~
+    ?~  t.ts.r  i.ts.r
+    ~|([%wut t] !!)
+  ++  token
+    |=  t=tree:sur
+    ?:  ?=(%t -.t)  tok.t
+    ~|([%token t] !!)
+  ++  drop
+    |=  [n=@ t=tree:sur]
+    ?:  =(0 n)  t
+    $(n (dec n), t q:(seq t))
+  ++  head  |=(t=tree:sur p:(seq t))
+  ++  nth
+    |=  [n=@ t=tree:sur]
+    ~|  [%nth n t]
+    (head (drop n t))
+  --
 ++  sam
   |=  (list (pair @tas act:sur))
   (~(gas by *mean:sur) +<)
