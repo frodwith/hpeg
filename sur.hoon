@@ -71,7 +71,7 @@
     $%  [%u usr]                 :: user
         [%t tok=tom]             :: token(s)
         [%l name=@tas p=tree]    :: labelled
-        [%r n=@ l=(list tree)]   :: repetition
+        [%r l=(list tree)]       :: repetition
     ==
   ::  semantic actions have state(sus) and access to the position
   ::  at the beginning and end of a match. they can transform

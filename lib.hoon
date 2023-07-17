@@ -52,21 +52,21 @@
     ~|([%seq t] !!)
   ++  tar
     |=  t=tree:sur
-    ^-  [n=@ ts=(list tree:sur)]
+    ^-  (list tree:sur)
     ?:  ?=(%r -.t)  +.t
     ~|([%tar t] !!)
   ++  lus
     |=  t=tree:sur
-    ^-  [n=@ ts=(lest tree:sur)]
+    ^-  (lest tree:sur)
     =/  r  (tar t)
-    ?^  ts.r  r
+    ?^  r  r
     ~|([%lus t] !!)
   ++  wut
     |=  t=tree:sur
     ^-  $@(~ tree:sur)
     =/  r  (tar t)
-    ?~  ts.r    ~
-    ?~  t.ts.r  i.ts.r
+    ?~  r    ~
+    ?~  t.r  i.r
     ~|([%wut t] !!)
   ++  token
     |=  t=tree:sur
@@ -199,7 +199,7 @@
   =.  n  +(n)
   ?.  |(inf (lte n max))  ret
   $(out [r.pro.r out], tos tos.pro.r, sus sus.pro.r)
-  ++  ret  [[[%r n (flop out)] tos sus] mem]
+  ++  ret  [[[%r (flop out)] tos sus] mem]
   --
     %6  ::  run
   (tope |=(a=@ &((gte a lo.main) (lte a hi.main))))

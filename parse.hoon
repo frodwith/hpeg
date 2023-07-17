@@ -144,7 +144,7 @@
       :-  %grammar
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
-    =/  l  ts:(lus.x t)
+    =/  l  (lus.x t)
     =/  expect-def
       |=  t=tree.pep
       ?:  ?=([%u %def d=*] t)
@@ -165,9 +165,9 @@
     =/  top  (seq.x t)
     =/  mor=(lest tree.pep)
       :-  =/  tar  (tar.x p.top)
-          ?>  ?=([* ~] ts.tar)
-          i.ts.tar
-      ts:(tar.x q.top)
+          ?>  ?=([* ~] tar)
+          i.tar
+      (tar.x q.top)
     |-  ^-  plan
     =/  p=plan  (expect-plan i.mor)
     ?~  t.mor  p
@@ -189,7 +189,7 @@
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
     :+  %u  %plan
-    =/  kids  ts:(lus.x t)
+    =/  kids  (lus.x t)
     |-  ^-  plan
     =/  p  (expect-plan i.kids)
     ?~  t.kids  p
@@ -198,7 +198,7 @@
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
     :+  %u  %num
-    =/  dig  (flop ts:(tar.x t))
+    =/  dig  (flop (tar.x t))
     =|  [pac=_1 n=@]
     |-  ^-  @
     ?~  dig  n
@@ -281,7 +281,7 @@
       :-  %literal
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
-    =/  sin  ts:(tar.x (nth.x 1 t))
+    =/  sin  (tar.x (nth.x 1 t))
     :+  %u  %plan
     ?~  sin  any+&
     |-  ^-  plan
@@ -311,7 +311,7 @@
       :-  %charclass
     |=  [t=tree.pep *]
     :_  ~  ^-  tree.pep
-    =/  kids  ts:(tar.x (nth.x 1 t))
+    =/  kids  (tar.x (nth.x 1 t))
     :+  %u  %plan
     ?~  kids  any+|
     =|  [s=(set @) out=(list (each (set @) (pair @ @)))]
@@ -355,7 +355,7 @@
     ^-  @tas
     %+  rep  3
     :-  (token.x p.top)
-    (turn ts:(tar.x q.top) token.x)
+    (turn (tar.x q.top) token.x)
     ::::
       :-  %sp
     |=  [t=tree.pep *]
