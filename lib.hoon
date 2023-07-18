@@ -40,6 +40,15 @@
   |=  cs=(list @)
   ^-  plan
   set+(~(gas in *(set @)) cs)
+++  tuff  |=(@t +<)
+++  ascii
+  |=  txt=@t
+  =/  len  (met 3 txt)
+  =/  c    %*(. cut a 3, c 1, d txt)
+  |=  pos=@
+  ^-  $@(~ [@ @])
+  ?:  (gte pos len)  ~
+  [(c(b pos)) +(pos)]
 ++  lib
 =|  poly
 |@  

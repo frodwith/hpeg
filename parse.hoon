@@ -105,16 +105,9 @@
       [%max n=@]
       [%mid from=@ to=@]
   ==
-=/  pom  [@ta ,[@ud @ud @ta] usr ,~ ,~]
+=/  pom  [@t @ud usr ,~ ,~]
 =/  pep  ~(. sur pom)
 =/  pib  ~(. lib pom)
-=/  ascii-cords=toke.pep
-  :-  |=(@ta `@`+<)
-  =/  c  %*(. cut a 3, c 1)
-  |=  [i=@ud len=@ud txt=@ta]
-  ?:  (gte i len)  ~
-  :_  [+(i) +<+]
-  (c(b i, d txt))
 =/  x  tool.pib
 =/  expect-plan
   |=  t=tree.pep  !.
@@ -365,8 +358,12 @@
 =/  peg-compiled=exe.pep  (bake.pib peg-grammar plan-actions)
 =/  peg-parser
   |=  input=@ta
-  =/  tos  [0 (met 3 input) input]
-  =/  r    (exec.pib ascii-cords no-memo peg-compiled tos ~ ~)
+  =/  r    %-  exec.pib
+           :*  [tuff (ascii input)]
+               no-memo
+               peg-compiled
+               0  ~  ~
+           ==
   ?>  ?=([%u %gram *] r)
   g.r
 :::-  p=peg-grammar
