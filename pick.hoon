@@ -15,8 +15,8 @@
       [%mid from=@ to=@]
   ==
 +$  pine  (trek @t leaves)
-++  pict  |$  tos  (pact pine * tos)
-++  parm  |$  tos  [@t tos leaves ,~ ,~]
+++  pict  |*  tos=mold  (pact pine * tos)
+++  parm  |*  tos=mold  [@t tos leaves ,~ ,~]
 --
 =/  pick-grammar=gram
   =/  arrow=plan  [t+'<' t+'-']
@@ -78,7 +78,7 @@
     tar+(chas ' ' 9 10 ~)
   ==
 =+  :*  !.
-  x=(expect pine)
+  x=(expect @t leaves)
   ^=  xnon
   |=  t=pine
   ^-  @tas
@@ -96,12 +96,6 @@
   ^-  @
   ?:  ?=([%u %num *] t)  n.t
   ~|  [%xcount t]  !!
-  ::
-  ^=  xgram
-  |=  t=pine
-  ^-  gram
-  ?:  ?=([%u %gram *] t)  g.t
-  ~|  [%xgram t]  !!
   ==
 =/  acts
   %-  ~(gas by *(map @tas $-([pine *] [pine ~])))
@@ -118,7 +112,7 @@
     :_  ~  ^-  pine
     =/  l  (lus.x t)
     =/  xdef
-      |=  t=pine
+      |=  t=pine  !.
       ?:  ?=([%u %def d=*] t)
         d.t
       ~|  [%def t]  !!
@@ -368,10 +362,11 @@ identifier  <- [a-z] [a-z0-9-]*
 nonterminal <- :head identifier sp
 sp          <- [ \t\n]*
 '''
+=/  alib  ~(. lib (parm @ud))
+=/  aexe  (bake.alib pick-grammar acts)
 |%
 ++  parse-ascii-cord
-  =/  lib  ~(. lib (parm @ud))
-  =/  exe  (bake.lib pick-grammar acts)
   |=  txt=@t
-  (xgram (exec.lib [tuff (ascii txt)] no-memo exe 0 ~ ~))
+  =-  ?>  ?=([%u %gram *] -)  g
+  (exec.alib [tuff (ascii txt)] no-memo aexe 0 ~ ~)
 --

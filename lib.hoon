@@ -36,19 +36,65 @@
   |=  rs=(list (pair @tas plan))
   ?~  rs  !!
   [p.i.rs (~(gas by *(map @tas plan)) rs)]
+++  pimp
+  |*  act=mold
+  |=  (list (pair @tas act))
+  (~(gas by *(map @tas act)) +<)
 ++  chas
   |=  cs=(list @)
   ^-  plan
   set+(~(gas in *(set @)) cs)
+++  expect
+  |*  [tom=mold usr=mold]
+  =*  tree  (trek tom usr)  !.
+  |%
+  ++  seq
+    |=  t=tree
+    ?^  -.t  t
+    ~|([%seq t] !!)
+  ++  tar
+    |=  t=tree
+    ^-  (list tree)
+    ?:  ?=(%r -.t)  +.t
+    ~|([%tar t] !!)
+  ++  lus
+    |=  t=tree
+    ^-  (lest tree)
+    =/  r  (tar t)
+    ?^  r  r
+    ~|([%lus t] !!)
+  ++  wut
+    |=  t=tree
+    ^-  $@(~ tree)
+    =/  r  (tar t)
+    ?~  r    ~
+    ?~  t.r  i.r
+    ~|([%wut t] !!)
+  ++  token
+    |=  t=tree
+    ?:  ?=(%t -.t)  tok.t
+    ~|([%token t] !!)
+  ++  drop
+    |=  [n=@ t=tree]
+    ?:  =(0 n)  t
+    $(n (dec n), t q:(seq t))
+  ++  head  |=(t=tree p:(seq t))
+  ++  nth
+    |=  [n=@ t=tree]
+    ~|  [%nth n t]
+    (head (drop n t))
+  --
 ++  tuff  |=(@t +<)
+++  no-memo  =/(z |=(* ~) z^z)
 ++  ascii
   |=  txt=@t
-  =/  len  (met 3 txt)
-  =/  c    %*(. cut a 3, c 1, d txt)
-  |=  pos=@
+  =+  ^=  [cut cmp]
+      :-  %*(. cut +< [3 [i=0 1] txt])
+      %*(. gte +< [i=0 (met 3 txt)])
+  |=  i=@
   ^-  $@(~ [@ @])
-  ?:  (gte pos len)  ~
-  [(c(b pos)) +(pos)]
+  ?:  (cmp(i i))  ~
+  [(cut(i i)) +(i)]
 ++  lib
 =|  poly
 |@  
@@ -91,9 +137,7 @@
     ~|  [%nth n t]
     (head (drop n t))
   --
-++  sam
-  |=  (list (pair @tas act:sur))
-  (~(gas by *mean:sur) +<)
+++  sam  (pimp act:sur)
 ++  bake
   |=  [=gram m=mean:sur]
   ^-  exe:sur

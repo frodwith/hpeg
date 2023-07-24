@@ -25,6 +25,30 @@
       [%yel name=@tas p=plan]        ::  tag with forced %l
       [%mem p=plan]                  ::  memoize
   ==
+::  semantic actions have state(sus) and access to the position
+::  at the beginning and end of a match. they can transform
+::  what match trees look like, but not the language matched
+::  by the grammar. state is discarded across backtracking.
+::  for semantics "inside a rule", e.g. `!:`, use something like
+::  [tag+zpcl-start+[t+'!' t+':'] r+%gap tag+zpcl-end+r+%tall]
+::  and have the zpcl-start and zpcl-end actions turn the debug
+::  flag on and off in the state.
+::  actions can be used to build position captures, which is
+::  why we don't have an operator for those.
+++  pact
+  |$  [tree sus tos]
+  $-  [tree sus tos tos]
+  [=tree =sus]
+++  trek
+  ::  the %u case enables (tagged) typed semantic actions.
+  |*  [tom=mold usr=mold]
+  $~  [%u *usr]
+  $^  [p=$ q=$]
+  $%  [%u usr]              :: user
+      [%t tok=tom]          :: token(s)
+      [%l name=@tas p=$]    :: labelled
+      [%r l=(list $)]       :: repetition
+  ==
 +$  poly                      ::  types hpeg is polymorphic over
   $:  tom=mold                ::  token
       tos=mold                ::  tokenizer state
@@ -51,6 +75,9 @@
   ::  requested from an input string. This trades space for time,
   ::  as redundant work will be done when backtracking, but this
   ::  makes sense for some tokenizers (ascii cords for example).
+  ::  Users can avoid including position information in token
+  ::  objects (saving space) by utilizing semantic actions
+  ::  or by tracking position during analysis.
   ::
   ::  puff maps tokens to atoms.
   ::  when tokens are characters, it should be the id function.
@@ -64,26 +91,8 @@
   +$  pass  $-(tos $@(~ [tok=tom sat=tos]))
   +$  toke  [puf=puff pas=pass]
   ::
-  ::  the %u case enables (tagged) typed semantic actions.
-  +$  tree
-    $~  [%u *usr]
-    $^  [p=tree q=tree]
-    $%  [%u usr]                 :: user
-        [%t tok=tom]             :: token(s)
-        [%l name=@tas p=tree]    :: labelled
-        [%r l=(list tree)]       :: repetition
-    ==
-  ::  semantic actions have state(sus) and access to the position
-  ::  at the beginning and end of a match. they can transform
-  ::  what match trees look like, but not the language matched
-  ::  by the grammar. state is discarded across backtracking.
-  ::  for semantics "inside a rule", e.g. `!:`, use something like
-  ::  [tag+zpcl-start+[t+'!' t+':'] r+%gap tag+zpcl-end+r+%tall]
-  ::  and have the zpcl-start and zpcl-end actions turn the debug
-  ::  flag on and off in the state.
-  +$  act
-    $-  [tree sus tos tos]
-    [=tree =sus]
+  +$  tree  (trek tom usr)
+  +$  act   (pact tree sus tos)
   +$  mean  (map @tas act)
   ::
   ::  a compiled plan: symbolic rule references have been dox'd,
